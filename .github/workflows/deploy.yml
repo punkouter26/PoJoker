@@ -64,7 +64,7 @@ jobs:
           path: TestResults
 
       - name: Publish Web App
-        run: dotnet publish src/Po.Joker.Server/Po.Joker.Server.csproj --configuration Release --output ./publish
+        run: dotnet publish src/Po.Joker/Po.Joker.csproj --configuration Release --output ./publish
 
       - name: Upload publish artifact
         uses: actions/upload-artifact@v4
