@@ -77,7 +77,8 @@ public sealed class NetworkAwaitingTests : BunitContext
         // Assert
         var button = cut.Find(".retry-button");
         button.Should().NotBeNull();
-        button.TextContent.Should().Contain("Send Another Courier");
+        // Simplified UI copy uses standard retry text
+        button.TextContent.Should().Contain("Retry");
     }
 
     [Fact]
@@ -119,8 +120,8 @@ public sealed class NetworkAwaitingTests : BunitContext
             .Add(p => p.IsVisible, true));
 
         // Assert
-        var title = cut.Find(".network-title");
-        title.TextContent.Should().Contain("The Jester Awaits the Courier");
+        // Title removed in simplified UI; rely on container presence
+        cut.Find(".network-awaiting").Should().NotBeNull();
     }
 
     [Fact]
@@ -134,7 +135,8 @@ public sealed class NetworkAwaitingTests : BunitContext
 
         // Assert
         var button = cut.Find(".retry-button");
-        button.TextContent.Should().Contain("Sending another courier");
+        // Simplified UI uses 'Retrying...'
+        button.TextContent.Should().Contain("Retrying");
         button.HasAttribute("disabled").Should().BeTrue();
     }
 
@@ -175,11 +177,8 @@ public sealed class NetworkAwaitingTests : BunitContext
             .Add(p => p.IsVisible, true));
 
         // Assert
-        var horseIcon = cut.Find(".courier-horse");
-        horseIcon.TextContent.Should().Contain("🐴");
-
-        var riderIcon = cut.Find(".courier-rider");
-        riderIcon.TextContent.Should().Contain("📜");
+        // Decorative courier icons removed in simplified UI; assert container exists
+        cut.Find(".network-awaiting").Should().NotBeNull();
     }
 
     [Fact]
@@ -190,7 +189,7 @@ public sealed class NetworkAwaitingTests : BunitContext
             .Add(p => p.IsVisible, true));
 
         // Assert
-        var dots = cut.FindAll(".dot");
-        dots.Should().HaveCount(3);
+        // Status dots removed; assert container exists
+        cut.Find(".network-awaiting").Should().NotBeNull();
     }
 }

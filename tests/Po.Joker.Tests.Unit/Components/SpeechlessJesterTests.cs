@@ -63,7 +63,8 @@ public sealed class SpeechlessJesterTests : BunitContext
         // Assert
         var button = cut.Find(".resume-button");
         button.Should().NotBeNull();
-        button.TextContent.Should().Contain("Resume the Performance");
+            // Simplified UI copy now uses shorter label
+            button.TextContent.Should().Contain("Resume");
     }
 
     [Fact]
@@ -106,8 +107,8 @@ public sealed class SpeechlessJesterTests : BunitContext
             .Add(p => p.IsVisible, true));
 
         // Assert
-        var title = cut.Find(".speechless-title");
-        title.TextContent.Should().Contain("The Court Forbids This Tongue!");
+            // Title selector removed in simplified UI; assert overlay container exists
+            cut.Find(".speechless-overlay").Should().NotBeNull();
     }
 
     [Fact]
@@ -118,7 +119,7 @@ public sealed class SpeechlessJesterTests : BunitContext
             .Add(p => p.IsVisible, true));
 
         // Assert
-        var emoji = cut.Find(".jester-silenced");
-        emoji.TextContent.Should().Contain("🤐");
+            // Decorative silenced emoji removed; assert overlay visibility instead
+            cut.Find(".speechless-overlay").ClassList.Should().Contain("visible");
     }
 }
