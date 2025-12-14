@@ -1,0 +1,106 @@
+@page "/leaderboard"
+@using Po.Joker.Client.Components
+@using Po.Joker.Shared.DTOs
+@inject HttpClient Http
+
+<PageTitle>Leaderboard - The Digital Jester</PageTitle>
+
+<div class="leaderboard-page">
+    <header class="leaderboard-header">
+        <h1>🏆 Hall of Champions</h1>
+        <p class="subtitle">The greatest Jesters in the realm</p>
+    </header>
+
+    <div class="leaderboard-controls">
+        <div class="sort-controls">
+            <label>Sort by:</label>
+            <select @bind="SortBy" @bind:after="LoadLeaderboard">
+                <option value="Triumph">Most Triumphs</option>
+                <option value="Cleverness">Most Clever</option>
+                <option value="Rudeness">Most Rude</option>
+                <option value="Complexity">Most Complex</option>
+                <option value="Difficulty">Most Difficult</option>
+            </select>
+        </div>
+        
+        <div class="limit-controls">
+            <label>Show:</label>
+            <select @bind="TopCount" @bind:after="LoadLeaderboard">
+                <option value="10">Top 10</option>
+                <option value="25">Top 25</option>
+                <option value="50">Top 50</option>
+                <option value="100">Top 100</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="leaderboard-container">
+        @if (IsLoading)
+        {
+            <div class="loading-state">
+                <div class="loading-jester"></div>
+                <p>Consulting the royal records...</p>
+            </div>
+        }
+        else if (Entries.Count == 0)
+        {
+            <div class="empty-state">
+                <p>🎭 No champions yet!</p>
+                <p class="subtitle">Be the first to claim glory on the stage.</p>
+                <a href="/" class="btn btn-primary">Begin Performance</a>
+            </div>
+        }
+        else
+        {
+            <div class="leaderboard-table">
+                <div class="table-header">
+                    <span class="header-rank">Rank</span>
+                    <span class="header-session">Session</span>
+                    <span class="header-stats">Triumphs</span>
+                    <span class="header-rate">Rate</span>
+                    <span class="header-score">Score</span>
+                </div>
+                
+                @foreach (var entry in Entries)
+                {
+                    <LeaderboardEntry Entry="@entry" />
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private List<LeaderboardEntryDto> Entries { get; set; } = [];
+    private bool IsLoading { get; set; } = true;
+    private string SortBy { get; set; } = "Triumph";
+    private int TopCount { get; set; } = 10;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadLeaderboard();
+    }
+
+    private async Task LoadLeaderboard()
+    {
+        IsLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            var response = await Http.GetAsync($"/api/leaderboard?sortBy={SortBy}&top={TopCount}");
+            if (response.IsSuccessStatusCode)
+            {
+                Entries = await response.Content.ReadFromJsonAsync<List<LeaderboardEntryDto>>() ?? [];
+            }
+        }
+        catch (Exception)
+        {
+            Entries = [];
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+}

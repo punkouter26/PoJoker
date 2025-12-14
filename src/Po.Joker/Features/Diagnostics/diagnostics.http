@@ -1,0 +1,10 @@
+@baseUrl = https://localhost:7200
+
+### Get Diagnostics
+# Returns system health status and metrics
+GET {{baseUrl}}/api/diagnostics
+Accept: application/json
+
+### Get Health Check (standard .NET health endpoint)
+GET {{baseUrl}}/health
+Accept: application/json

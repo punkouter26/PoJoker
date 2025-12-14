@@ -1,0 +1,35 @@
+### Analyze a joke - Programming category
+POST {{baseUrl}}/api/jokes/analyze
+Content-Type: application/json
+
+{
+    "id": 123,
+    "category": "Programming",
+    "type": "twopart",
+    "setup": "Why do programmers prefer dark mode?",
+    "punchline": "Because light attracts bugs!"
+}
+
+### Analyze a joke - Pun category
+POST {{baseUrl}}/api/jokes/analyze
+Content-Type: application/json
+
+{
+    "id": 456,
+    "category": "Pun",
+    "type": "twopart",
+    "setup": "What do you call a fake noodle?",
+    "punchline": "An impasta!"
+}
+
+### Analyze a joke - Invalid request (should return 400)
+POST {{baseUrl}}/api/jokes/analyze
+Content-Type: application/json
+
+{
+    "id": 789,
+    "category": "Test",
+    "type": "invalid",
+    "setup": "",
+    "punchline": ""
+}

@@ -1,0 +1,31 @@
+﻿@inherits LayoutComponentBase
+
+<div class="jester-app">
+    <header class="jester-header">
+        <div class="header-brand">
+            <span class="jester-icon">🎭</span>
+            <h1>The Digital Jester</h1>
+        </div>
+        <nav class="header-nav">
+            <NavMenu />
+        </nav>
+    </header>
+
+    <main class="jester-main">
+        @Body
+    </main>
+
+    <footer class="jester-footer">
+        <p>A Medieval AI Comedy Experience • <span class="version">v1.0.0</span></p>
+    </footer>
+</div>
+
+<div id="blazor-error-ui" data-nosnippet>
+    <div class="error-content">
+        <span class="jester-icon">😵</span>
+        <span>The Jester has stumbled! An error has occurred.</span>
+        <a href="." class="btn btn-secondary">Reload the Court</a>
+        <span class="dismiss">🗙</span>
+    </div>
+</div>
+

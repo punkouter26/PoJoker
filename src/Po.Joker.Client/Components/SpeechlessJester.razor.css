@@ -1,0 +1,123 @@
+.speechless-jester {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(10, 10, 15, 0.95);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.5s ease, visibility 0.5s ease;
+}
+
+.speechless-jester.visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+.speechless-content {
+    text-align: center;
+    max-width: 500px;
+    padding: 3rem;
+    background: linear-gradient(145deg, #1a1a2e, #16213e);
+    border: 3px solid #8b0000;
+    border-radius: 20px;
+    box-shadow: 
+        0 0 30px rgba(139, 0, 0, 0.4),
+        inset 0 0 60px rgba(0, 0, 0, 0.5);
+    animation: speechless-appear 0.5s ease-out;
+}
+
+@keyframes speechless-appear {
+    from {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.jester-silenced {
+    font-size: 5rem;
+    margin-bottom: 1rem;
+    animation: silenced-shake 0.5s ease-in-out infinite alternate;
+}
+
+@keyframes silenced-shake {
+    from { transform: rotate(-3deg); }
+    to { transform: rotate(3deg); }
+}
+
+.speechless-title {
+    font-family: 'Cinzel', 'Times New Roman', serif;
+    color: #8b0000;
+    font-size: 1.8rem;
+    margin-bottom: 1rem;
+    text-shadow: 0 0 10px rgba(139, 0, 0, 0.5);
+}
+
+.speechless-message {
+    color: #d4af37;
+    font-size: 1.1rem;
+    margin-bottom: 1.5rem;
+    font-style: italic;
+}
+
+.speechless-scroll {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid #4a4a4a;
+    border-radius: 10px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.speechless-detail {
+    color: #a0a0a0;
+    font-size: 0.9rem;
+    margin: 0;
+    line-height: 1.6;
+}
+
+.resume-button {
+    background: linear-gradient(145deg, #2d1f3d, #1a1a2e);
+    border: 2px solid #d4af37;
+    color: #d4af37;
+    padding: 0.8rem 2rem;
+    font-size: 1rem;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: 'Cinzel', 'Times New Roman', serif;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.resume-button:hover {
+    background: linear-gradient(145deg, #3d2f4d, #2a2a3e);
+    box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+    transform: translateY(-2px);
+}
+
+.resume-icon {
+    font-size: 1.2rem;
+}
+
+.auto-resume-notice {
+    color: #6a6a6a;
+    font-size: 0.85rem;
+    margin-top: 1rem;
+    margin-bottom: 0;
+}
+
+.countdown {
+    color: #d4af37;
+    font-weight: bold;
+    font-size: 1rem;
+}

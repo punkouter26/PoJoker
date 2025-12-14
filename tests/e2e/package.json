@@ -1,0 +1,16 @@
+{
+  "name": "po-joker-e2e",
+  "version": "1.0.0",
+  "description": "Po.Joker E2E Tests with Playwright",
+  "type": "module",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:ui": "playwright test --ui",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.57.0",
+    "typescript": "^5.9.3"
+  }
+}

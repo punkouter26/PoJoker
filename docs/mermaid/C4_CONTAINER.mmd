@@ -1,0 +1,24 @@
+graph LR
+    User["👤 User<br/>Browser"]
+
+    subgraph PoJoker["PoJoker Application"]
+        WASM["🎭 Blazor WASM Client<br/>Po.Joker.Client<br/>- Components<br/>- Performance Orchestrator<br/>- Services<br/><br/>Technology: Blazor WebAssembly"]
+        
+        Server["🖥️ ASP.NET Core Server<br/>Po.Joker<br/>- API Endpoints<br/>- CQRS Handlers<br/>- Business Logic<br/><br/>Technology: .NET 10, ASP.NET Core"]
+        
+        Shared["📦 Shared Models<br/>Po.Joker.Shared<br/>- DTOs<br/>- Enums<br/>- Contracts<br/><br/>Technology: C# Classes"]
+    end
+
+    subgraph External["🔗 External APIs"]
+        OpenAI["Azure OpenAI<br/>GPT-4o-mini Deployment"]
+        JokeAPI["JokeAPI v2<br/>Joke Catalog"]
+        TableStorage["Azure Table Storage<br/>Leaderboard & State"]
+    end
+
+    User -->|HTTPS| WASM
+    WASM -->|HTTP/JSON| Server
+    Server -.->|Uses| Shared
+    WASM -.->|Uses| Shared
+    Server -->|REST/gRPC| OpenAI
+    Server -->|REST| JokeAPI
+    Server -->|REST| TableStorage

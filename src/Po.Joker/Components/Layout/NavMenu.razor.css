@@ -1,0 +1,41 @@
+/* Simple horizontal nav menu */
+.nav-menu {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.nav-menu ::deep .nav-link {
+    color: var(--color-text-secondary, #b8b8b8);
+    text-decoration: none;
+    padding: 0.4rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.nav-menu ::deep .nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+.nav-menu ::deep .nav-link.active {
+    background-color: rgba(212, 175, 55, 0.2);
+    color: var(--color-accent-gold, #d4af37);
+}
+
+/* Mobile: stack vertically */
+@media (max-width: 640px) {
+    .nav-menu {
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+    
+    .nav-menu ::deep .nav-link {
+        width: 100%;
+        justify-content: center;
+    }
+}

@@ -1,0 +1,13 @@
+@* Session Statistics Display Component *@
+<div class="session-stats">
+    <span class="stat triumph-stat">✨ Triumphs: @Triumphs</span>
+    <span class="stat defeat-stat">💀 Defeats: @Defeats</span>
+</div>
+
+@code {
+    [Parameter]
+    public int Triumphs { get; set; }
+
+    [Parameter]
+    public int Defeats { get; set; }
+}

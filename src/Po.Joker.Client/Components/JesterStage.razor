@@ -1,0 +1,92 @@
+@using Po.Joker.Shared.DTOs
+@using Po.Joker.Shared.Enums
+@using Po.Joker.Client.Components
+@using Po.Joker.Client.Services
+@using System.Net.Http.Json
+@inject HttpClient Http
+@inject ISpeechService SpeechService
+@inject IAudioService AudioService
+@implements IDisposable
+
+<SpeechlessJester 
+    IsVisible="@_orchestrator.ShowSpeechlessOverlay" 
+    Message="@_orchestrator.SpeechlessMessage"
+    AutoResumeSeconds="0"
+    ShowResumeButton="false"
+    OnResume="@_orchestrator.ResumeSpeechlessAsync" />
+
+<NetworkAwaiting 
+    IsVisible="@_orchestrator.ShowNetworkOverlay" 
+    Message="Connection lost. Retrying."
+    StatusText="@_orchestrator.NetworkStatusText"
+    IsRetrying="@_orchestrator.IsRetrying"
+    RetryCount="@_orchestrator.RetryCount"
+    ShowRetryButton="false"
+    OnRetry="@_orchestrator.RetryNetworkAsync" />
+
+<div class="jester-stage">
+    <div class="stage-header">
+        <h2>Performance</h2>
+        <SessionStats Triumphs="@_orchestrator.SessionTriumphs" Defeats="@_orchestrator.SessionDefeats" />
+    </div>
+
+    <PerformanceDisplay 
+        CurrentState="@_orchestrator.CurrentState"
+        CurrentJoke="@_orchestrator.CurrentJoke"
+        CurrentAnalysis="@_orchestrator.CurrentAnalysis" />
+
+    <PerformanceControls 
+        IsRunning="@_orchestrator.IsRunning"
+        SafeModeEnabled="@_orchestrator.SafeModeEnabled"
+        AudioEnabled="@_orchestrator.AudioEnabled"
+        OnStart="@StartPerformance"
+        OnStop="@StopPerformance"
+        OnSafeModeChanged="@HandleSafeModeChanged"
+        OnAudioChanged="@HandleAudioChanged" />
+</div>
+
+@code {
+    private PerformanceOrchestrator _orchestrator = null!;
+
+    protected override void OnInitialized()
+    {
+        _orchestrator = new PerformanceOrchestrator(Http, SpeechService, AudioService);
+        _orchestrator.StateChanged += OnStateChanged;
+    }
+
+    private async Task StartPerformance()
+    {
+        await _orchestrator.StartAsync();
+    }
+
+    private async Task StopPerformance()
+    {
+        await _orchestrator.StopAsync();
+    }
+
+    private async Task HandleSafeModeChanged(bool enabled)
+    {
+        _orchestrator.SafeModeEnabled = enabled;
+        await Task.CompletedTask;
+    }
+
+    private async Task HandleAudioChanged(bool enabled)
+    {
+        _orchestrator.AudioEnabled = enabled;
+        await Task.CompletedTask;
+    }
+
+    private void OnStateChanged()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        if (_orchestrator != null)
+        {
+            _orchestrator.StateChanged -= OnStateChanged;
+            _orchestrator.Dispose();
+        }
+    }
+}

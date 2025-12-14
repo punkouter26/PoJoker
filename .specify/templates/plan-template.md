@@ -17,21 +17,29 @@
   the iteration process.
 -->
 
-**Language/Version**: [e.g., Python 3.11, Swift 5.9, Rust 1.75 or NEEDS CLARIFICATION]  
-**Primary Dependencies**: [e.g., FastAPI, UIKit, LLVM or NEEDS CLARIFICATION]  
-**Storage**: [if applicable, e.g., PostgreSQL, CoreData, files or N/A]  
-**Testing**: [e.g., pytest, XCTest, cargo test or NEEDS CLARIFICATION]  
-**Target Platform**: [e.g., Linux server, iOS 15+, WASM or NEEDS CLARIFICATION]
-**Project Type**: [single/web/mobile - determines source structure]  
-**Performance Goals**: [domain-specific, e.g., 1000 req/s, 10k lines/sec, 60 fps or NEEDS CLARIFICATION]  
-**Constraints**: [domain-specific, e.g., <200ms p95, <100MB memory, offline-capable or NEEDS CLARIFICATION]  
-**Scale/Scope**: [domain-specific, e.g., 10k users, 1M LOC, 50 screens or NEEDS CLARIFICATION]
+**Language/Version**: C# / .NET 10 (locked in global.json)  
+**Primary Dependencies**: Blazor Web App (Interactive Auto), MediatR, Polly, Serilog  
+**Storage**: Azure Storage (Azurite for local dev), Entity Framework Core  
+**Testing**: xUnit (Unit/Integration), bUnit (Components), Playwright (E2E)  
+**Target Platform**: Azure App Service, Web (Chromium mobile/desktop)
+**Project Type**: web (Server + Client projects)  
+**Performance Goals**: Unit tests < 20ms, API response p95 < 200ms  
+**Constraints**: 80% code coverage minimum, mobile-first responsive UI  
+**Scale/Scope**: Single resource group deployment, $5/month budget cap
 
 ## Constitution Check
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+| Principle | Requirement | Status |
+|-----------|-------------|--------|
+| I. Foundation | .NET 10, Directory.Packages.props, Nullable enabled | ⬜ |
+| II. Architecture | VSA in /src/Po.[AppName].Api/Features/, Shared project DTOs only | ⬜ |
+| III. Backend | Minimal APIs, global IExceptionHandler, Polly pipelines | ⬜ |
+| III. Frontend | CSS Isolation, mobile-first, Radzen only for complex UI | ⬜ |
+| III. Dev Env | Secret Manager (local), Key Vault (prod), Azurite, launch.json | ⬜ |
+| IV. Testing | TDD workflow, 80% coverage, xUnit/bUnit/Playwright, DIAG page | ⬜ |
+| V. Operations | Bicep in /infra, azd deploy, OIDC auth, $5 budget alert | ⬜ |
 
 ## Project Structure
 
@@ -56,39 +64,49 @@ specs/[###-feature]/
 -->
 
 ```text
-# [REMOVE IF UNUSED] Option 1: Single project (DEFAULT)
+# PoJoker Blazor Web App Structure (per Constitution II. Architecture)
 src/
-├── models/
-├── services/
-├── cli/
-└── lib/
+├── Po.Joker.Api/                    # Server project (API + SSR)
+│   ├── Features/                    # Vertical Slice Architecture
+│   │   ├── [FeatureName]/
+│   │   │   ├── [FeatureName]Endpoint.cs
+│   │   │   ├── [FeatureName]Command.cs
+│   │   │   └── [FeatureName]Query.cs
+│   │   └── ...
+│   ├── Infrastructure/
+│   │   ├── ExceptionHandling/       # Global IExceptionHandler
+│   │   ├── Resilience/              # Polly pipelines
+│   │   └── Telemetry/               # OpenTelemetry, Serilog
+│   └── Program.cs
+├── Po.Joker.Client/                 # Client project (WASM components)
+│   ├── Components/
+│   │   └── Pages/
+│   └── wwwroot/
+├── Po.Joker.Shared/                 # DTOs, contracts, validation only
+│   ├── DTOs/
+│   ├── Contracts/
+│   └── Validation/
+└── Po.Joker.Domain/                 # Domain models (Commands only)
+    ├── Entities/
+    └── Repositories/
 
 tests/
-├── contract/
-├── integration/
-└── unit/
+├── Po.Joker.Api.Tests/              # xUnit integration tests
+├── Po.Joker.Client.Tests/           # bUnit component tests
+├── Po.Joker.Domain.Tests/           # xUnit unit tests
+└── Po.Joker.E2E.Tests/              # Playwright E2E tests
 
-# [REMOVE IF UNUSED] Option 2: Web application (when "frontend" + "backend" detected)
-backend/
-├── src/
-│   ├── models/
-│   ├── services/
-│   └── api/
-└── tests/
+docs/
+├── adrs/                            # Architecture Decision Records
+├── coverage/                        # Combined coverage reports
+└── kql/                             # Azure monitoring queries
 
-frontend/
-├── src/
-│   ├── components/
-│   ├── pages/
-│   └── services/
-└── tests/
+infra/                               # Bicep IaC files
+├── main.bicep
+├── modules/
+└── parameters/
 
-# [REMOVE IF UNUSED] Option 3: Mobile + API (when "iOS/Android" detected)
-api/
-└── [same as backend above]
-
-ios/ or android/
-└── [platform-specific structure: feature modules, UI flows, platform tests]
+scripts/                             # LLM-created helper scripts
 ```
 
 **Structure Decision**: [Document the selected structure and reference the real

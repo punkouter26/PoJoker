@@ -1,0 +1,56 @@
+@namespace Po.Joker.Client.Components
+
+<div class="leaderboard-entry @(Entry.IsCurrentSession ? "current-session" : "")">
+    <div class="rank-cell">
+        @if (Entry.Rank <= 3)
+        {
+            <span class="medal">@GetMedal(Entry.Rank)</span>
+        }
+        else
+        {
+            <span class="rank-number">@Entry.Rank</span>
+        }
+    </div>
+    
+    <div class="session-cell">
+        <span class="session-id">@TruncateSessionId(Entry.SessionId)</span>
+    </div>
+    
+    <div class="stats-cell">
+        <span class="triumphs" title="Triumphs">✨ @Entry.Triumphs</span>
+        <span class="separator">/</span>
+        <span class="total" title="Total Jokes">@Entry.TotalJokes</span>
+    </div>
+    
+    <div class="rate-cell">
+        <span class="triumph-rate">@Entry.TriumphRate.ToString("F1")%</span>
+    </div>
+    
+    <div class="score-cell">
+        <span class="score">@Entry.Score.ToString("F0")</span>
+    </div>
+</div>
+
+@code {
+    /// <summary>
+    /// The leaderboard entry to display.
+    /// </summary>
+    [Parameter]
+    public required LeaderboardEntryDto Entry { get; set; }
+
+    private static string GetMedal(int rank) => rank switch
+    {
+        1 => "🥇",
+        2 => "🥈",
+        3 => "🥉",
+        _ => rank.ToString()
+    };
+
+    private static string TruncateSessionId(string sessionId)
+    {
+        if (string.IsNullOrEmpty(sessionId) || sessionId.Length <= 12)
+            return sessionId;
+        
+        return $"{sessionId[..8]}...";
+    }
+}

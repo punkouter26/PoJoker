@@ -1,0 +1,62 @@
+@* Performance Control Panel Component *@
+<div class="stage-controls">
+    @if (!IsRunning)
+    {
+        <button class="btn btn-primary" @onclick="OnStart">
+            ▶️ Start
+        </button>
+    }
+    else
+    {
+        <button class="btn btn-danger" @onclick="OnStop">
+            ⏹️ Stop
+        </button>
+    }
+
+    <div class="safe-mode-toggle">
+        <label>
+            <input type="checkbox" @bind="SafeModeEnabled" @bind:after="HandleSafeModeChanged" />
+            🛡️ Safe Mode
+        </label>
+    </div>
+
+    <div class="audio-toggle">
+        <label>
+            <input type="checkbox" @bind="AudioEnabled" @bind:after="HandleAudioChanged" />
+            🔊 Audio
+        </label>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public bool IsRunning { get; set; }
+
+    [Parameter]
+    public bool SafeModeEnabled { get; set; } = true;
+
+    [Parameter]
+    public bool AudioEnabled { get; set; } = true;
+
+    [Parameter]
+    public EventCallback OnStart { get; set; }
+
+    [Parameter]
+    public EventCallback OnStop { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> OnSafeModeChanged { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> OnAudioChanged { get; set; }
+
+    private async Task HandleSafeModeChanged()
+    {
+        await OnSafeModeChanged.InvokeAsync(SafeModeEnabled);
+    }
+
+    private async Task HandleAudioChanged()
+    {
+        await OnAudioChanged.InvokeAsync(AudioEnabled);
+    }
+}

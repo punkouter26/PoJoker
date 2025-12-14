@@ -1,0 +1,196 @@
+# Po.Joker - The Digital Jester 🃏
+
+A passive AI comedy application where an AI Jester fetches jokes, attempts to predict punchlines, and provides entertaining analysis—all without user input.
+
+![.NET 10](https://img.shields.io/badge/.NET-10.0%20Preview-purple)
+![Blazor](https://img.shields.io/badge/Blazor-Web%20App-blue)
+![Azure](https://img.shields.io/badge/Azure-Deployed-0078D4)
+![License](https://img.shields.io/badge/License-MIT-green)
+
+## 🎭 Features
+
+- **Passive Comedy Loop**: Autonomous, never-ending comedy show
+- **AI Punchline Prediction**: GPT-4 attempts to guess punchlines before reveal
+- **Medieval Dark Theme**: Immersive Gothic UI with custom fonts
+- **Text-to-Speech**: British male voice narration
+- **Audio Effects**: Drum roll before reveals, trombone on failures
+- **Joke Ratings**: Cleverness, Rudeness, Complexity, and Difficulty scores
+- **Leaderboards**: Browse historical jokes by rating category
+- **Diagnostics**: Health checks for all external dependencies
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) (Preview)
+- [Azure CLI](https://docs.microsoft.com/cli/azure/install-azure-cli) (for deployment)
+- [Azurite](https://learn.microsoft.com/azure/storage/common/storage-use-azurite) (for local Table Storage)
+
+### Local Development
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/your-org/PoJoker.git
+   cd PoJoker
+   ```
+
+2. **Start Azurite for local storage**
+   ```bash
+   azurite --silent --location ./azurite --debug ./azurite/debug.log
+   ```
+
+3. **Configure secrets (optional - for AI features)**
+   ```bash
+   cd src/Po.Joker
+   dotnet user-secrets init
+   dotnet user-secrets set "OpenAI:ApiKey" "your-api-key"
+   ```
+
+4. **Run the application**
+   ```bash
+   dotnet run --project src/Po.Joker
+   ```
+
+5. **Open in browser**
+   Navigate to `https://localhost:5001`
+
+### Running Tests
+
+```bash
+# Unit tests
+dotnet test tests/Po.Joker.Tests.Unit
+
+# All tests with coverage
+dotnet test --collect:"XPlat Code Coverage"
+
+# E2E tests (requires browser)
+dotnet test tests/Po.Joker.Tests.E2E
+```
+
+## 🏗️ Architecture
+
+```
+Po.Joker/
+├── src/
+│   ├── Po.Joker/               # Server-side Blazor + API endpoints
+│   │   ├── Features/           # Vertical slice architecture
+│   │   │   ├── Jokes/          # Joke fetching from JokeAPI
+│   │   │   ├── Analysis/       # AI punchline prediction
+│   │   │   ├── Leaderboards/   # Historical joke rankings
+│   │   │   └── Diagnostics/    # Health checks
+│   │   └── Infrastructure/     # Cross-cutting concerns
+│   ├── Po.Joker.Client/        # Client-side Blazor WASM
+│   └── Po.Joker.Shared/        # DTOs and contracts
+├── tests/
+│   ├── Po.Joker.Tests.Unit/    # xUnit unit tests
+│   └── Po.Joker.Tests.E2E/     # Playwright E2E tests
+├── infra/                       # Bicep IaC templates
+└── docs/                        # Documentation
+```
+
+## ☁️ Azure Deployment
+
+### Using GitHub Actions (Recommended)
+
+1. **Configure OIDC authentication**
+   - Create an Azure AD App Registration
+   - Add Federated Credentials for your GitHub repository
+   - Set repository secrets:
+     - `AZURE_CLIENT_ID`
+     - `AZURE_TENANT_ID`
+     - `AZURE_SUBSCRIPTION_ID`
+     - `OPENAI_API_KEY`
+
+2. **Deploy via workflow**
+   - Push to `main` branch for automatic deployment
+   - Use manual workflow dispatch for specific environments
+
+### Manual Deployment
+
+```bash
+# Login to Azure
+az login
+
+# Create resource group
+az group create --name rg-pojoker-dev --location eastus2
+
+# Deploy infrastructure
+az deployment group create \
+  --resource-group rg-pojoker-dev \
+  --template-file infra/main.bicep \
+  --parameters environment=dev
+
+# Publish and deploy app
+dotnet publish src/Po.Joker -c Release -o ./publish
+az webapp deploy --resource-group rg-pojoker-dev \
+  --name pojoker-dev-app \
+  --src-path ./publish
+```
+
+## 📊 Monitoring
+
+### Application Insights
+
+The application includes comprehensive monitoring:
+- Request/response logging
+- AI latency tracking
+- Error rate monitoring
+- Custom metrics for joke analysis
+
+### KQL Queries
+
+See [docs/kql/](docs/kql/) for monitoring queries:
+- `error-rates.kql` - Error monitoring and anomaly detection
+- `ai-latency.kql` - AI service performance tracking
+
+## 🔧 Configuration
+
+### Environment Variables
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `OpenAI__ApiKey` | OpenAI API key for punchline prediction | No* |
+| `Azure__StorageConnectionString` | Azure Table Storage connection | No* |
+| `APPLICATIONINSIGHTS_CONNECTION_STRING` | App Insights connection | No |
+
+*Uses mock/local services when not configured
+
+### App Settings
+
+```json
+{
+  "JokeSettings": {
+    "CacheEnabled": true,
+    "RateLimitPerMinute": 60,
+    "SafeMode": true
+  }
+}
+```
+
+## 📝 API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/jokes/fetch` | GET | Fetch a random joke from JokeAPI |
+| `/api/jokes/analyze` | POST | Get AI punchline prediction and ratings |
+| `/api/leaderboard` | GET | Retrieve joke leaderboard |
+| `/api/diagnostics` | GET | Health check status |
+| `/health` | GET | Simple health probe |
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- [JokeAPI](https://jokeapi.dev/) for the joke database
+- [Azure OpenAI](https://azure.microsoft.com/products/ai-services/openai-service) for AI capabilities
+- [Radzen Blazor](https://blazor.radzen.com/) for UI components

@@ -1,0 +1,121 @@
+/* MainLayout specific styles - Medieval Dark Theme */
+
+.jester-app {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    min-height: 100dvh;
+}
+
+.jester-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.3) 0%, transparent 100%);
+    border-bottom: 1px solid rgba(212, 175, 55, 0.3);
+}
+
+.header-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.header-brand .jester-icon {
+    font-size: 1.75rem;
+    animation: jesterBounce 3s ease-in-out infinite;
+}
+
+.header-brand h1 {
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    margin: 0;
+    background: linear-gradient(135deg, var(--color-accent-gold), #fff5cc, var(--color-accent-gold));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+@keyframes jesterBounce {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    25% { transform: translateY(-5px) rotate(-5deg); }
+    75% { transform: translateY(-5px) rotate(5deg); }
+}
+
+.header-nav {
+    display: flex;
+    align-items: center;
+}
+
+.jester-main {
+    flex: 0 0 auto;
+    padding: 0.5rem 1rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.jester-footer {
+    text-align: center;
+    padding: 0.5rem;
+    border-top: 1px solid rgba(212, 175, 55, 0.2);
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.jester-footer p {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: 0.875rem;
+}
+
+.jester-footer .version {
+    color: var(--color-accent-gold);
+}
+
+/* Error UI styling */
+#blazor-error-ui {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 9999;
+    background: var(--color-accent-crimson);
+    padding: var(--spacing-md);
+}
+
+.error-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-md);
+    color: white;
+}
+
+.error-content .jester-icon {
+    font-size: 1.5rem;
+}
+
+.error-content .dismiss {
+    cursor: pointer;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    margin-left: var(--spacing-md);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .jester-header {
+        flex-direction: column;
+        gap: var(--spacing-md);
+        padding: var(--spacing-md);
+    }
+
+    .header-brand h1 {
+        font-size: 1.25rem;
+    }
+
+    .jester-main {
+        padding: var(--spacing-md);
+    }
+}

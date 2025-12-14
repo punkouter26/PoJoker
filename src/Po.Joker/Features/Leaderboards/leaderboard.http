@@ -1,0 +1,35 @@
+### Get Leaderboard - Top 10 by Triumph
+GET {{baseUrl}}/api/leaderboard?sortBy=Triumph&top=10
+Accept: application/json
+
+###
+
+### Get Leaderboard - Top 25 by Cleverness
+GET {{baseUrl}}/api/leaderboard?sortBy=Cleverness&top=25
+Accept: application/json
+
+###
+
+### Get Leaderboard - Top 10 by Rudeness
+GET {{baseUrl}}/api/leaderboard?sortBy=Rudeness&top=10
+Accept: application/json
+
+###
+
+### Get Leaderboard - Top 10 by Complexity
+GET {{baseUrl}}/api/leaderboard?sortBy=Complexity&top=10
+Accept: application/json
+
+###
+
+### Get Leaderboard - Top 10 by Difficulty
+GET {{baseUrl}}/api/leaderboard?sortBy=Difficulty&top=10
+Accept: application/json
+
+###
+
+### Get Leaderboard - Max 100 entries
+GET {{baseUrl}}/api/leaderboard?sortBy=Triumph&top=100
+Accept: application/json
+
+###

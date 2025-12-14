@@ -1,0 +1,9 @@
+graph TB
+    Azure["☁️ External APIs<br/>OpenAI, JokeAPI,<br/>Table Storage"]
+    Client["🌐 Blazor Client"]
+    Server["🖥️ Server"]
+    User["👤 User"]
+
+    User -->|Uses| Client
+    Client -->|Calls| Server
+    Server -->|Integrates| Azure

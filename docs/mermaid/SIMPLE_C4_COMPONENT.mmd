@@ -1,0 +1,25 @@
+graph TB
+    subgraph Client["Client Components"]
+        Stage["🎭 JesterStage"]
+        Orch["State Machine"]
+    end
+    
+    subgraph Server["Server Features"]
+        API["📡 Endpoints"]
+        Logic["💡 Business Logic"]
+    end
+    
+    subgraph External["External"]
+        AI["OpenAI"]
+        Jokes["JokeAPI"]
+    end
+
+    Stage --> Orch
+    Orch -->|HTTP| API
+    API --> Logic
+    Logic --> AI
+    Logic --> Jokes
+    
+    style Stage fill:#4a9eff
+    style API fill:#ff9f43
+    style Logic fill:#ffa502

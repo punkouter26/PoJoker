@@ -1,0 +1,8 @@
+.home-container {
+    padding: 1rem 0;
+}
+
+.stage-section {
+    display: flex;
+    justify-content: center;
+}

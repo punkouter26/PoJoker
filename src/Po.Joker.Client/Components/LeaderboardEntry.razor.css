@@ -1,0 +1,92 @@
+.leaderboard-entry {
+    display: grid;
+    grid-template-columns: 60px 1fr 120px 80px 100px;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+    transition: background-color 0.2s ease;
+}
+
+.leaderboard-entry:hover {
+    background: rgba(212, 175, 55, 0.1);
+}
+
+.leaderboard-entry.current-session {
+    background: rgba(212, 175, 55, 0.15);
+    border-left: 3px solid var(--color-gold, #d4af37);
+}
+
+.rank-cell {
+    text-align: center;
+}
+
+.medal {
+    font-size: 1.5rem;
+}
+
+.rank-number {
+    font-family: var(--font-heading, 'UnifrakturMaguntia', cursive);
+    font-size: 1.2rem;
+    color: var(--color-text-muted, #888);
+}
+
+.session-cell {
+    overflow: hidden;
+}
+
+.session-id {
+    font-family: var(--font-body, 'MedievalSharp', serif);
+    color: var(--color-text, #e0e0e0);
+    font-size: 0.9rem;
+}
+
+.stats-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.triumphs {
+    color: var(--color-gold, #d4af37);
+    font-weight: 600;
+}
+
+.separator {
+    color: var(--color-text-muted, #888);
+}
+
+.total {
+    color: var(--color-text, #e0e0e0);
+}
+
+.rate-cell {
+    text-align: center;
+}
+
+.triumph-rate {
+    font-family: var(--font-body, 'MedievalSharp', serif);
+    color: var(--color-success, #4ade80);
+    font-size: 0.9rem;
+}
+
+.score-cell {
+    text-align: right;
+}
+
+.score {
+    font-family: var(--font-heading, 'UnifrakturMaguntia', cursive);
+    color: var(--color-gold, #d4af37);
+    font-size: 1.1rem;
+    font-weight: bold;
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+    .leaderboard-entry {
+        grid-template-columns: 50px 1fr 80px 60px;
+    }
+    
+    .session-cell {
+        display: none;
+    }
+}

@@ -1,0 +1,205 @@
+# Po.Joker Azure Deployment
+# Build, Test, and Deploy to Azure App Service using OIDC authentication
+name: Deploy to Azure
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+
+# Required for OIDC authentication with Azure
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  DOTNET_VERSION: '10.0.x'
+  AZURE_WEBAPP_NAME: pojoker-${{ inputs.environment || 'dev' }}-app
+  AZURE_RESOURCE_GROUP: rg-pojoker-${{ inputs.environment || 'dev' }}
+  AZURE_LOCATION: 'eastus2'
+
+jobs:
+  build:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+          dotnet-quality: 'preview'
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Run Unit Tests
+        run: dotnet test tests/Po.Joker.Tests.Unit/Po.Joker.Tests.Unit.csproj --configuration Release --no-build --verbosity normal --logger trx --results-directory TestResults
+
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: TestResults
+
+      - name: Publish Web App
+        run: dotnet publish src/Po.Joker.Server/Po.Joker.Server.csproj --configuration Release --output ./publish
+
+      - name: Upload publish artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: webapp
+          path: ./publish
+
+  infrastructure:
+    name: Deploy Infrastructure
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    environment: ${{ inputs.environment || 'dev' }}
+    
+    outputs:
+      webAppName: ${{ steps.deploy.outputs.webAppName }}
+      webAppHostname: ${{ steps.deploy.outputs.webAppHostname }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Create Resource Group
+        uses: azure/cli@v2
+        with:
+          azcliversion: latest
+          inlineScript: |
+            az group create \
+              --name ${{ env.AZURE_RESOURCE_GROUP }} \
+              --location ${{ env.AZURE_LOCATION }} \
+              --tags Application=Po.Joker Environment=${{ inputs.environment || 'dev' }}
+
+      - name: Deploy Bicep
+        id: deploy
+        uses: azure/arm-deploy@v2
+        with:
+          subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          resourceGroupName: ${{ env.AZURE_RESOURCE_GROUP }}
+          template: ./infra/main.bicep
+          parameters: >
+            environment=${{ inputs.environment || 'dev' }}
+            openAiApiKey=${{ secrets.OPENAI_API_KEY }}
+          failOnStdErr: false
+
+  deploy:
+    name: Deploy Application
+    needs: [build, infrastructure]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    environment:
+      name: ${{ inputs.environment || 'dev' }}
+      url: https://${{ needs.infrastructure.outputs.webAppHostname }}
+    
+    steps:
+      - name: Download publish artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: webapp
+          path: ./publish
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ needs.infrastructure.outputs.webAppName }}
+          package: ./publish
+
+      - name: Health Check
+        run: |
+          echo "Waiting for deployment to complete..."
+          sleep 30
+          
+          HEALTH_URL="https://${{ needs.infrastructure.outputs.webAppHostname }}/health"
+          echo "Checking health endpoint: $HEALTH_URL"
+          
+          for i in {1..10}; do
+            response=$(curl -s -o /dev/null -w "%{http_code}" "$HEALTH_URL" || echo "000")
+            if [ "$response" = "200" ]; then
+              echo "✅ Health check passed!"
+              exit 0
+            fi
+            echo "Attempt $i/10: HTTP $response, retrying in 10s..."
+            sleep 10
+          done
+          
+          echo "❌ Health check failed after 10 attempts"
+          exit 1
+
+  e2e-tests:
+    name: E2E Tests
+    needs: [deploy, infrastructure]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+          dotnet-quality: 'preview'
+
+      - name: Install Playwright
+        run: |
+          dotnet build tests/Po.Joker.Tests.E2E/Po.Joker.Tests.E2E.csproj
+          pwsh tests/Po.Joker.Tests.E2E/bin/Debug/net10.0/playwright.ps1 install chromium
+
+      - name: Run E2E Tests
+        env:
+          BASE_URL: https://${{ needs.infrastructure.outputs.webAppHostname }}
+        run: |
+          dotnet test tests/Po.Joker.Tests.E2E/Po.Joker.Tests.E2E.csproj \
+            --configuration Release \
+            --verbosity normal \
+            --logger trx \
+            --results-directory E2ETestResults
+
+      - name: Upload E2E Test Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-test-results
+          path: E2ETestResults

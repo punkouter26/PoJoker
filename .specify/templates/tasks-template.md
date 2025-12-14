@@ -20,10 +20,10 @@ description: "Task list template for feature implementation"
 
 ## Path Conventions
 
-- **Single project**: `src/`, `tests/` at repository root
-- **Web app**: `backend/src/`, `frontend/src/`
-- **Mobile**: `api/src/`, `ios/src/` or `android/src/`
-- Paths shown below assume single project - adjust based on plan.md structure
+- **PoJoker Structure**: `src/Po.Joker.Api/`, `src/Po.Joker.Client/`, `src/Po.Joker.Shared/`, `src/Po.Joker.Domain/`
+- **Tests**: `tests/Po.Joker.Api.Tests/`, `tests/Po.Joker.Client.Tests/`, `tests/Po.Joker.Domain.Tests/`, `tests/Po.Joker.E2E.Tests/`
+- **Vertical Slices**: Feature code in `src/Po.Joker.Api/Features/[FeatureName]/`
+- Paths shown below assume PoJoker structure per Constitution II. Architecture
 
 <!-- 
   ============================================================================
@@ -34,6 +34,11 @@ description: "Task list template for feature implementation"
   - Feature requirements from plan.md
   - Entities from data-model.md
   - Endpoints from contracts/
+  
+  Tasks MUST follow TDD workflow (Constitution IV):
+  1. Write tests FIRST (Red)
+  2. Implement to pass tests (Green)
+  3. Refactor while maintaining green tests
   
   Tasks MUST be organized by user story so each story can be:
   - Implemented independently
@@ -46,28 +51,35 @@ description: "Task list template for feature implementation"
 
 ## Phase 1: Setup (Shared Infrastructure)
 
-**Purpose**: Project initialization and basic structure
+**Purpose**: Project initialization and basic structure per Constitution I. Foundation
 
-- [ ] T001 Create project structure per implementation plan
-- [ ] T002 Initialize [language] project with [framework] dependencies
-- [ ] T003 [P] Configure linting and formatting tools
+- [ ] T001 Create solution structure: `src/`, `tests/`, `docs/`, `infra/`, `scripts/`
+- [ ] T002 Run `dotnet new blazor` for Server and Client projects (if no code exists)
+- [ ] T003 [P] Create `global.json` locked to .NET 10.0.xxx SDK
+- [ ] T004 [P] Create `Directory.Build.props` with latest C# features and `<Nullable>enable</Nullable>`
+- [ ] T005 [P] Create `Directory.Packages.props` for centralized NuGet management
+- [ ] T006 [P] Create `launch.json` for one-step F5 debug launch
+- [ ] T007 Run `dotnet format` on solution to ensure consistency
 
 ---
 
 ## Phase 2: Foundational (Blocking Prerequisites)
 
-**Purpose**: Core infrastructure that MUST be complete before ANY user story can be implemented
+**Purpose**: Core infrastructure per Constitution II & III that MUST be complete before ANY user story
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-Examples of foundational tasks (adjust based on your project):
-
-- [ ] T004 Setup database schema and migrations framework
-- [ ] T005 [P] Implement authentication/authorization framework
-- [ ] T006 [P] Setup API routing and middleware structure
-- [ ] T007 Create base models/entities that all stories depend on
-- [ ] T008 Configure error handling and logging infrastructure
-- [ ] T009 Setup environment configuration management
+- [ ] T008 Setup Vertical Slice Architecture folder structure in `src/Po.Joker.Api/Features/`
+- [ ] T009 [P] Implement global `IExceptionHandler` for RFC 7807 Problem Details
+- [ ] T010 [P] Configure Serilog structured logging
+- [ ] T011 [P] Setup OpenTelemetry with `ActivitySource` and `Meter`
+- [ ] T012 [P] Configure Polly resilience pipelines (Retry, Circuit Breaker, Timeout)
+- [ ] T013 Setup Secret Manager for local development (`dotnet user-secrets`)
+- [ ] T014 [P] Configure Azure Key Vault integration (Production environment only)
+- [ ] T015 [P] Setup Azurite for local storage development
+- [ ] T016 Enable Swagger/OpenAPI generation
+- [ ] T017 [P] Create DIAG Razor page with .NET Health Checks for external service verification
+- [ ] T018 Create `Po.Joker.Shared` project with DTOs/contracts structure
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
@@ -79,23 +91,26 @@ Examples of foundational tasks (adjust based on your project):
 
 **Independent Test**: [How to verify this story works on its own]
 
-### Tests for User Story 1 (OPTIONAL - only if tests requested) ⚠️
+### Tests for User Story 1 (TDD - Write FIRST, must FAIL) 🔴
 
-> **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
+> **Constitution IV: Red → Green → Refactor workflow is MANDATORY**
 
-- [ ] T010 [P] [US1] Contract test for [endpoint] in tests/contract/test_[name].py
-- [ ] T011 [P] [US1] Integration test for [user journey] in tests/integration/test_[name].py
+- [ ] T019 [P] [US1] xUnit unit test for [Handler] in `tests/Po.Joker.Domain.Tests/`
+- [ ] T020 [P] [US1] xUnit integration test (happy path) in `tests/Po.Joker.Api.Tests/`
+- [ ] T021 [P] [US1] bUnit component test in `tests/Po.Joker.Client.Tests/`
 
-### Implementation for User Story 1
+### Implementation for User Story 1 (Make tests GREEN) 🟢
 
-- [ ] T012 [P] [US1] Create [Entity1] model in src/models/[entity1].py
-- [ ] T013 [P] [US1] Create [Entity2] model in src/models/[entity2].py
-- [ ] T014 [US1] Implement [Service] in src/services/[service].py (depends on T012, T013)
-- [ ] T015 [US1] Implement [endpoint/feature] in src/[location]/[file].py
-- [ ] T016 [US1] Add validation and error handling
-- [ ] T017 [US1] Add logging for user story 1 operations
+- [ ] T022 [P] [US1] Create DTOs in `src/Po.Joker.Shared/DTOs/`
+- [ ] T023 [P] [US1] Create Domain entity in `src/Po.Joker.Domain/Entities/`
+- [ ] T024 [US1] Implement Command handler in `src/Po.Joker.Api/Features/[Feature]/`
+- [ ] T025 [US1] Implement Query handler (AsNoTracking) in `src/Po.Joker.Api/Features/[Feature]/`
+- [ ] T026 [US1] Create Minimal API endpoint in `src/Po.Joker.Api/Features/[Feature]/`
+- [ ] T027 [US1] Create Blazor component with CSS Isolation in `src/Po.Joker.Client/Components/`
+- [ ] T028 [US1] Create `.http` file for endpoint verification
+- [ ] T029 [US1] Verify 80% code coverage threshold met
 
-**Checkpoint**: At this point, User Story 1 should be fully functional and testable independently
+**Checkpoint**: User Story 1 fully functional and tested independently
 
 ---
 
@@ -105,19 +120,21 @@ Examples of foundational tasks (adjust based on your project):
 
 **Independent Test**: [How to verify this story works on its own]
 
-### Tests for User Story 2 (OPTIONAL - only if tests requested) ⚠️
+### Tests for User Story 2 (TDD - Write FIRST, must FAIL) 🔴
 
-- [ ] T018 [P] [US2] Contract test for [endpoint] in tests/contract/test_[name].py
-- [ ] T019 [P] [US2] Integration test for [user journey] in tests/integration/test_[name].py
+- [ ] T030 [P] [US2] xUnit unit test for [Handler] in `tests/Po.Joker.Domain.Tests/`
+- [ ] T031 [P] [US2] xUnit integration test (happy path) in `tests/Po.Joker.Api.Tests/`
+- [ ] T032 [P] [US2] bUnit component test in `tests/Po.Joker.Client.Tests/`
 
-### Implementation for User Story 2
+### Implementation for User Story 2 (Make tests GREEN) 🟢
 
-- [ ] T020 [P] [US2] Create [Entity] model in src/models/[entity].py
-- [ ] T021 [US2] Implement [Service] in src/services/[service].py
-- [ ] T022 [US2] Implement [endpoint/feature] in src/[location]/[file].py
-- [ ] T023 [US2] Integrate with User Story 1 components (if needed)
+- [ ] T033 [P] [US2] Create DTOs in `src/Po.Joker.Shared/DTOs/`
+- [ ] T034 [US2] Implement Command/Query handlers in `src/Po.Joker.Api/Features/[Feature]/`
+- [ ] T035 [US2] Create Minimal API endpoint with Swagger docs
+- [ ] T036 [US2] Create Blazor component (mobile-first, CSS Isolation)
+- [ ] T037 [US2] Create `.http` file and verify 80% coverage
 
-**Checkpoint**: At this point, User Stories 1 AND 2 should both work independently
+**Checkpoint**: User Stories 1 AND 2 both work independently
 
 ---
 
@@ -127,18 +144,20 @@ Examples of foundational tasks (adjust based on your project):
 
 **Independent Test**: [How to verify this story works on its own]
 
-### Tests for User Story 3 (OPTIONAL - only if tests requested) ⚠️
+### Tests for User Story 3 (TDD - Write FIRST, must FAIL) 🔴
 
-- [ ] T024 [P] [US3] Contract test for [endpoint] in tests/contract/test_[name].py
-- [ ] T025 [P] [US3] Integration test for [user journey] in tests/integration/test_[name].py
+- [ ] T038 [P] [US3] xUnit unit test in `tests/Po.Joker.Domain.Tests/`
+- [ ] T039 [P] [US3] xUnit integration test in `tests/Po.Joker.Api.Tests/`
+- [ ] T040 [P] [US3] bUnit component test in `tests/Po.Joker.Client.Tests/`
 
-### Implementation for User Story 3
+### Implementation for User Story 3 (Make tests GREEN) 🟢
 
-- [ ] T026 [P] [US3] Create [Entity] model in src/models/[entity].py
-- [ ] T027 [US3] Implement [Service] in src/services/[service].py
-- [ ] T028 [US3] Implement [endpoint/feature] in src/[location]/[file].py
+- [ ] T041 [P] [US3] Create DTOs in `src/Po.Joker.Shared/DTOs/`
+- [ ] T042 [US3] Implement handlers in `src/Po.Joker.Api/Features/[Feature]/`
+- [ ] T043 [US3] Create endpoint and Blazor component
+- [ ] T044 [US3] Verify 80% coverage threshold
 
-**Checkpoint**: All user stories should now be independently functional
+**Checkpoint**: All user stories independently functional
 
 ---
 
@@ -146,15 +165,44 @@ Examples of foundational tasks (adjust based on your project):
 
 ---
 
-## Phase N: Polish & Cross-Cutting Concerns
+## Phase N-1: E2E Testing (Playwright)
 
-**Purpose**: Improvements that affect multiple user stories
+**Purpose**: Full-stack validation per Constitution IV. Quality & Testing
 
-- [ ] TXXX [P] Documentation updates in docs/
-- [ ] TXXX Code cleanup and refactoring
+- [ ] TXXX [P] Playwright E2E test for User Story 1 (Chromium desktop)
+- [ ] TXXX [P] Playwright E2E test for User Story 1 (Chromium mobile)
+- [ ] TXXX [P] Playwright E2E test for User Story 2 (Chromium desktop + mobile)
+- [ ] TXXX [P] Playwright E2E test for User Story 3 (Chromium desktop + mobile)
+- [ ] TXXX Integrate automated accessibility checks
+- [ ] TXXX Integrate visual regression checks
+- [ ] TXXX Generate combined coverage report in `docs/coverage/`
+
+---
+
+## Phase N: Polish, Infrastructure & Azure Deployment
+
+**Purpose**: Operations and cross-cutting concerns per Constitution V
+
+### Azure Infrastructure (Bicep + azd)
+
+- [ ] TXXX Create `infra/main.bicep` with App Service, Storage, App Insights, Log Analytics
+- [ ] TXXX [P] Create `infra/modules/` for reusable Bicep modules
+- [ ] TXXX Configure $5 monthly budget with 80% alert to punkouter26@gmail.com
+- [ ] TXXX Enable App Insights Snapshot Debugger and Profiler
+
+### CI/CD (GitHub Actions)
+
+- [ ] TXXX Create `.github/workflows/deploy.yml` with OIDC authentication
+- [ ] TXXX Configure build and deploy to `PoJoker-rg` App Service
+- [ ] TXXX Setup Federated Credentials for secret-less Azure connection
+
+### Documentation & Polish
+
+- [ ] TXXX [P] Populate `docs/kql/` with essential monitoring queries
+- [ ] TXXX [P] Update README.md with setup and deployment instructions
+- [ ] TXXX Code cleanup and refactoring (maintain green tests)
 - [ ] TXXX Performance optimization across all stories
-- [ ] TXXX [P] Additional unit tests (if requested) in tests/unit/
-- [ ] TXXX Security hardening
+- [ ] TXXX Security hardening review
 - [ ] TXXX Run quickstart.md validation
 
 ---
@@ -168,7 +216,8 @@ Examples of foundational tasks (adjust based on your project):
 - **User Stories (Phase 3+)**: All depend on Foundational phase completion
   - User stories can then proceed in parallel (if staffed)
   - Or sequentially in priority order (P1 → P2 → P3)
-- **Polish (Final Phase)**: Depends on all desired user stories being complete
+- **E2E Testing (Phase N-1)**: Depends on user stories being complete
+- **Infrastructure & Deployment (Phase N)**: Can run in parallel with E2E testing
 
 ### User Story Dependencies
 
@@ -176,13 +225,15 @@ Examples of foundational tasks (adjust based on your project):
 - **User Story 2 (P2)**: Can start after Foundational (Phase 2) - May integrate with US1 but should be independently testable
 - **User Story 3 (P3)**: Can start after Foundational (Phase 2) - May integrate with US1/US2 but should be independently testable
 
-### Within Each User Story
+### Within Each User Story (TDD Workflow - Constitution IV)
 
-- Tests (if included) MUST be written and FAIL before implementation
-- Models before services
-- Services before endpoints
-- Core implementation before integration
-- Story complete before moving to next priority
+- Tests MUST be written FIRST and FAIL (Red)
+- Implementation makes tests pass (Green)
+- Refactor while maintaining green tests
+- DTOs before handlers
+- Handlers before endpoints
+- Endpoints before UI components
+- Verify 80% coverage before checkpoint
 
 ### Parallel Opportunities
 

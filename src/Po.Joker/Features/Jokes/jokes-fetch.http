@@ -1,0 +1,11 @@
+### Fetch a random joke - Safe Mode enabled
+GET {{baseUrl}}/api/jokes/fetch?safeMode=true
+
+### Fetch a random joke - Safe Mode disabled
+GET {{baseUrl}}/api/jokes/fetch?safeMode=false
+
+### Fetch a joke excluding specific IDs (use array format for int[])
+GET {{baseUrl}}/api/jokes/fetch?safeMode=true&excludeIds=1&excludeIds=2&excludeIds=3
+
+### Health check
+GET {{baseUrl}}/health

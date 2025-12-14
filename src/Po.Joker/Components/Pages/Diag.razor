@@ -1,0 +1,194 @@
+@page "/diag"
+@using Po.Joker.Shared.DTOs
+@inject HttpClient Http
+@inject IHostEnvironment Environment
+
+<PageTitle>Diagnostics - Digital Jester</PageTitle>
+
+<div class="diag-container">
+    <div class="diag-header">
+        <h1>🔧 Royal Court Diagnostics</h1>
+        <p class="diag-subtitle">Health status of the Jester's domain</p>
+    </div>
+
+    @if (_isLoading)
+    {
+        <div class="loading-state">
+            <div class="loading-spinner"></div>
+            <p>Inspecting the kingdom's infrastructure...</p>
+        </div>
+    }
+    else if (_diagnostics is not null)
+    {
+        <div class="diag-overview">
+            <div class="status-badge @GetOverallStatusClass()">
+                <span class="status-icon">@GetOverallStatusIcon()</span>
+                <span class="status-text">@_diagnostics.Status</span>
+            </div>
+            <div class="overview-stats">
+                <div class="stat-item">
+                    <span class="stat-label">Environment</span>
+                    <span class="stat-value">@_diagnostics.Environment</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Version</span>
+                    <span class="stat-value">@_diagnostics.Version</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Uptime</span>
+                    <span class="stat-value">@FormatUptime(_diagnostics.Uptime)</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Last Check</span>
+                    <span class="stat-value">@_diagnostics.Timestamp.ToString("HH:mm:ss")</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="services-section">
+            <h2>🏰 Kingdom Services</h2>
+            <div class="services-grid">
+                @foreach (var service in _diagnostics.Services)
+                {
+                    <div class="service-card @GetServiceStatusClass(service.Status)">
+                        <div class="service-header">
+                            <span class="service-icon">@GetServiceIcon(service.Name)</span>
+                            <span class="service-name">@service.Name</span>
+                        </div>
+                        <div class="service-status">
+                            <span class="status-indicator @GetServiceStatusClass(service.Status)"></span>
+                            <span>@service.Status</span>
+                        </div>
+                        <div class="service-details">
+                            <span class="response-time">⏱️ @service.ResponseTimeMs ms</span>
+                            @if (!string.IsNullOrEmpty(service.Message))
+                            {
+                                <span class="service-message">@service.Message</span>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="metrics-section">
+            <h2>📊 Performance Metrics</h2>
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <span class="metric-icon">🎭</span>
+                    <span class="metric-value">@_diagnostics.TotalJokesServed</span>
+                    <span class="metric-label">Jokes Served</span>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-icon">🧠</span>
+                    <span class="metric-value">@_diagnostics.TotalAnalyses</span>
+                    <span class="metric-label">AI Analyses</span>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-icon">🏆</span>
+                    <span class="metric-value">@_diagnostics.TriumphRate.ToString("P0")</span>
+                    <span class="metric-label">Triumph Rate</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="actions-section">
+            <button class="refresh-button" @onclick="RefreshDiagnostics">
+                🔄 Refresh Status
+            </button>
+        </div>
+    }
+    else if (_error is not null)
+    {
+        <div class="error-state">
+            <span class="error-icon">⚠️</span>
+            <p>@_error</p>
+            <button class="retry-button" @onclick="RefreshDiagnostics">Try Again</button>
+        </div>
+    }
+</div>
+
+@code {
+    private DiagnosticsDto? _diagnostics;
+    private bool _isLoading = true;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RefreshDiagnostics();
+    }
+
+    private async Task RefreshDiagnostics()
+    {
+        _isLoading = true;
+        _error = null;
+        StateHasChanged();
+
+        try
+        {
+            _diagnostics = await Http.GetFromJsonAsync<DiagnosticsDto>("/api/diagnostics");
+        }
+        catch (Exception ex)
+        {
+            _error = $"Failed to retrieve diagnostics: {ex.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private string GetOverallStatusClass()
+    {
+        return _diagnostics?.Status switch
+        {
+            HealthStatus.Healthy => "status-healthy",
+            HealthStatus.Degraded => "status-degraded",
+            HealthStatus.Unhealthy => "status-unhealthy",
+            _ => "status-unknown"
+        };
+    }
+
+    private string GetOverallStatusIcon()
+    {
+        return _diagnostics?.Status switch
+        {
+            HealthStatus.Healthy => "✅",
+            HealthStatus.Degraded => "⚠️",
+            HealthStatus.Unhealthy => "❌",
+            _ => "❓"
+        };
+    }
+
+    private string GetServiceStatusClass(HealthStatus status)
+    {
+        return status switch
+        {
+            HealthStatus.Healthy => "status-healthy",
+            HealthStatus.Degraded => "status-degraded",
+            HealthStatus.Unhealthy => "status-unhealthy",
+            _ => "status-unknown"
+        };
+    }
+
+    private string GetServiceIcon(string serviceName)
+    {
+        return serviceName.ToLowerInvariant() switch
+        {
+            "jokeapi" => "🃏",
+            "azureopenai" => "🧠",
+            "tablestorage" => "📦",
+            "keyvault" => "🔐",
+            _ => "🔌"
+        };
+    }
+
+    private static string FormatUptime(TimeSpan uptime)
+    {
+        if (uptime.TotalDays >= 1)
+            return $"{(int)uptime.TotalDays}d {uptime.Hours}h";
+        if (uptime.TotalHours >= 1)
+            return $"{(int)uptime.TotalHours}h {uptime.Minutes}m";
+        return $"{uptime.Minutes}m {uptime.Seconds}s";
+    }
+}
