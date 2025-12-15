@@ -31,6 +31,8 @@ env:
   AZURE_WEBAPP_NAME: pojoker-${{ inputs.environment || 'dev' }}-app
   AZURE_RESOURCE_GROUP: PoJoker
   AZURE_LOCATION: 'eastus'
+    AZURE_APP_SERVICE_PLAN_NAME: pojoker-shared-asp
+    AZURE_APP_SERVICE_PLAN_RG: poshared
 
 jobs:
   build:
@@ -112,9 +114,10 @@ jobs:
           subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           resourceGroupName: ${{ env.AZURE_RESOURCE_GROUP }}
           template: ./infra/main.bicep
-          parameters: >
-            environment=${{ inputs.environment || 'dev' }}
-            openAiApiKey=${{ secrets.OPENAI_API_KEY }}
+          parameters: |
+            environment=${{ inputs.environment }}
+            existingAppServicePlanName=${{ env.AZURE_APP_SERVICE_PLAN_NAME }}
+            existingAppServicePlanResourceGroup=${{ env.AZURE_APP_SERVICE_PLAN_RG }}
           failOnStdErr: false
 
   deploy:

@@ -22,12 +22,17 @@ param existingAppServicePlanResourceGroup string = 'poshared'
 @description('Existing App Service Plan name to use from the specified resource group.')
 param existingAppServicePlanName string
 
-@description('OpenAI API Key (optional - for production joke generation)')
-@secure()
-param openAiApiKey string = ''
+@description('Azure AI Foundry / OpenAI endpoint')
+param openAiEndpoint string = 'https://poshared-openai.cognitiveservices.azure.com/'
 
-@description('OpenAI Model deployment name')
-param openAiModel string = 'gpt-4o-mini'
+@description('Azure AI Foundry deployment name')
+param openAiDeploymentName string = 'gpt-4o-mini'
+
+@description('Resource group containing the shared Azure AI Foundry account')
+param existingOpenAiResourceGroup string = 'poshared'
+
+@description('Name of the shared Azure AI Foundry account to use')
+param existingOpenAiAccountName string = 'poshared-openai'
 
 @description('Email address for budget alerts')
 param budgetAlertEmail string = 'punkouter26@gmail.com'
@@ -122,6 +127,12 @@ resource appServicePlan 'Microsoft.Web/serverfarms@2024-04-01' existing = if (!e
   scope: resourceGroup(existingAppServicePlanResourceGroup)
 }
 
+// Shared Azure AI Foundry / OpenAI account
+resource openAi 'Microsoft.CognitiveServices/accounts@2024-10-01-preview' existing = {
+  name: existingOpenAiAccountName
+  scope: resourceGroup(existingOpenAiResourceGroup)
+}
+
 // Web App
 module webApp 'br/public:avm/res/web/site:0.15.1' = {
   name: 'webApp'
@@ -153,8 +164,8 @@ module webApp 'br/public:avm/res/web/site:0.15.1' = {
       APPLICATIONINSIGHTS_CONNECTION_STRING: appInsights.outputs.connectionString
       ASPNETCORE_ENVIRONMENT: environment == 'prod' ? 'Production' : 'Development'
       Azure__StorageAccountName: storageAccount.outputs.name
-      OpenAI__ApiKey: openAiApiKey
-      OpenAI__Model: openAiModel
+      Azure__OpenAI__Endpoint: openAiEndpoint
+      Azure__OpenAI__DeploymentName: openAiDeploymentName
       JokeSettings__CacheEnabled: 'true'
       JokeSettings__RateLimitPerMinute: '60'
       // App Insights Snapshot Debugger and Profiler (T115)
@@ -177,6 +188,18 @@ resource storageRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-
   scope: resourceGroup()
   properties: {
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'ba92f5b4-2d11-453d-a403-e96b0029c9fe') // Storage Blob Data Contributor
+    principalId: webApp.outputs.systemAssignedMIPrincipalId!
+    principalType: 'ServicePrincipal'
+  }
+}
+
+// Role assignment for Web App to call Azure AI Foundry/OpenAI
+var openAiRoleAssignmentName = guid(openAi.id, webApp.outputs.systemAssignedMIPrincipalId!, 'CognitiveServicesOpenAIUser')
+resource openAiRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: openAiRoleAssignmentName
+  scope: openAi
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd') // Cognitive Services OpenAI User
     principalId: webApp.outputs.systemAssignedMIPrincipalId!
     principalType: 'ServicePrincipal'
   }

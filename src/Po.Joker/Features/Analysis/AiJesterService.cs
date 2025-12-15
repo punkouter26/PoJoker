@@ -76,7 +76,7 @@ public sealed class AiJesterService : IAnalysisService
             stopwatch.Stop();
 
             var similarityScore = CalculateSimilarity(joke.Punchline, aiPunchline);
-            var isTriumph = similarityScore >= 0.65;
+            var isTriumph = similarityScore >= 0.55;
 
             OpenTelemetryConfig.JokesAnalyzed.Add(1,
                 new KeyValuePair<string, object?>("category", joke.Category),
@@ -147,7 +147,8 @@ public sealed class AiJesterService : IAnalysisService
         }
 
         // Weighted average: prioritize fuzzy matching (semantic closeness) over word overlap
-        return (levenshteinSimilarity * 0.6) + (jaccardSimilarity * 0.4);
+        // Slightly favor word overlap to catch concept matches (e.g., "Tooth hurt!" vs "Tooth hurt-y.")
+        return (levenshteinSimilarity * 0.55) + (jaccardSimilarity * 0.45);
     }
 
     /// <summary>
