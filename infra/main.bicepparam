@@ -4,7 +4,6 @@ using 'main.bicep'
 param environment = 'dev'
 param baseName = 'pojoker'
 param appServicePlanSku = 'B1'
-param openAiModel = 'gpt-4o-mini'
 
 // Shared App Service Plan (poshared resource group)
 param existingAppServicePlanName = 'pojoker-shared-asp'
