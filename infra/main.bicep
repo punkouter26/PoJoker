@@ -194,14 +194,13 @@ resource storageRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-
 }
 
 // Role assignment for Web App to call Azure AI Foundry/OpenAI
-var openAiRoleAssignmentName = guid(openAi.id, webApp.outputs.systemAssignedMIPrincipalId!, 'CognitiveServicesOpenAIUser')
-resource openAiRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: openAiRoleAssignmentName
-  scope: openAi
-  properties: {
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd') // Cognitive Services OpenAI User
+// Use a module for cross-resource-group role assignment
+module openAiRoleAssignment './modules/openai-role.bicep' = {
+  name: 'openAiRoleAssignment'
+  scope: resourceGroup(existingOpenAiResourceGroup)
+  params: {
+    openAiAccountName: existingOpenAiAccountName
     principalId: webApp.outputs.systemAssignedMIPrincipalId!
-    principalType: 'ServicePrincipal'
   }
 }
 
