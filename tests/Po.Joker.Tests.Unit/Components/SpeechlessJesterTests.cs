@@ -107,8 +107,8 @@ public sealed class SpeechlessJesterTests : BunitContext
             .Add(p => p.IsVisible, true));
 
         // Assert
-            // Title selector removed in simplified UI; assert overlay container exists
-            cut.Find(".speechless-overlay").Should().NotBeNull();
+        // Simplified UI: ensure main container renders when visible
+        cut.Find(".speechless-jester").Should().NotBeNull();
     }
 
     [Fact]
@@ -119,7 +119,7 @@ public sealed class SpeechlessJesterTests : BunitContext
             .Add(p => p.IsVisible, true));
 
         // Assert
-            // Decorative silenced emoji removed; assert overlay visibility instead
-            cut.Find(".speechless-overlay").ClassList.Should().Contain("visible");
+        // Decorative emoji removed; assert container visibility class instead
+        cut.Find(".speechless-jester").ClassList.Should().Contain("visible");
     }
 }
