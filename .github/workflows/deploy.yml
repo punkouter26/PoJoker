@@ -103,8 +103,8 @@ jobs:
           azcliversion: latest
           inlineScript: |
             az group create \
-              --name ${{ env.AZURE_RESOURCE_GROUP }} \
-              --location ${{ env.AZURE_LOCATION }} \
+              --name PoJoker \
+              --location eastus \
               --tags Application=Po.Joker Environment=${{ inputs.environment || 'dev' }}
 
       - name: Deploy Bicep
@@ -112,12 +112,12 @@ jobs:
         uses: azure/arm-deploy@v2
         with:
           subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          resourceGroupName: ${{ env.AZURE_RESOURCE_GROUP }}
+          resourceGroupName: PoJoker
           template: ./infra/main.bicep
           parameters: |
             environment=${{ inputs.environment || 'dev' }}
-            existingAppServicePlanName=${{ env.AZURE_APP_SERVICE_PLAN_NAME }}
-            existingAppServicePlanResourceGroup=${{ env.AZURE_APP_SERVICE_PLAN_RG }}
+            existingAppServicePlanName=pojoker-shared-asp
+            existingAppServicePlanResourceGroup=poshared
           failOnStdErr: false
 
   deploy:
