@@ -31,8 +31,8 @@ env:
   AZURE_WEBAPP_NAME: pojoker-${{ inputs.environment || 'dev' }}-app
   AZURE_RESOURCE_GROUP: PoJoker
   AZURE_LOCATION: 'eastus'
-    AZURE_APP_SERVICE_PLAN_NAME: pojoker-shared-asp
-    AZURE_APP_SERVICE_PLAN_RG: poshared
+  AZURE_APP_SERVICE_PLAN_NAME: pojoker-shared-asp
+  AZURE_APP_SERVICE_PLAN_RG: poshared
 
 jobs:
   build:
