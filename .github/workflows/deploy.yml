@@ -30,7 +30,7 @@ env:
   DOTNET_VERSION: '10.0.x'
   AZURE_WEBAPP_NAME: pojoker-${{ inputs.environment || 'dev' }}-app
   AZURE_RESOURCE_GROUP: PoJoker
-  AZURE_LOCATION: 'eastus2'
+  AZURE_LOCATION: 'eastus'
 
 jobs:
   build:
