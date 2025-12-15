@@ -117,6 +117,20 @@ jobs:
           parameters: ./infra/main.bicepparam environment=${{ inputs.environment || 'dev' }}
           failOnStdErr: false
 
+      - name: Grant Web App MI access to Foundry
+        uses: azure/cli@v2
+        with:
+          azcliversion: latest
+          inlineScript: |
+            WEB_APP_MI_ID=$(az webapp identity show --name pojoker-dev-app --resource-group PoJoker --query principalId -o tsv)
+            if [ ! -z "$WEB_APP_MI_ID" ]; then
+              az role assignment create \
+                --assignee-object-id "$WEB_APP_MI_ID" \
+                --role "Cognitive Services OpenAI User" \
+                --scope "/subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/resourceGroups/poshared/providers/Microsoft.CognitiveServices/accounts/poshared-openai" \
+                --assignee-principal-type "ServicePrincipal" 2>/dev/null || true
+            fi
+
   deploy:
     name: Deploy Application
     needs: [build, infrastructure]

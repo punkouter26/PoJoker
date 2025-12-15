@@ -194,15 +194,9 @@ resource storageRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-
 }
 
 // Role assignment for Web App to call Azure AI Foundry/OpenAI
-// Use a module for cross-resource-group role assignment
-module openAiRoleAssignment './modules/openai-role.bicep' = {
-  name: 'openAiRoleAssignment'
-  scope: resourceGroup(existingOpenAiResourceGroup)
-  params: {
-    openAiAccountName: existingOpenAiAccountName
-    principalId: webApp.outputs.systemAssignedMIPrincipalId!
-  }
-}
+// Note: The web app MI role assignment should be pre-provisioned in poshared RG
+// to avoid cross-RG deployment complexities. Ensure web app MI has 
+// "Cognitive Services OpenAI User" role on the poshared-openai account.
 
 // Budget for cost management
 module budget './modules/budget.bicep' = {
