@@ -1,0 +1,9 @@
+{
+  "description": "GitHub Actions OIDC for dev environment",
+  "issuer": "https://token.actions.githubusercontent.com",
+  "name": "gh-actions-env-dev",
+  "subject": "repo:punkouter26/PoJoker:environment:dev",
+  "audiences": [
+    "api://AzureADTokenExchange"
+  ]
+}

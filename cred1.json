@@ -1,0 +1,9 @@
+{
+  "description": "GitHub Actions OIDC for master branch",
+  "issuer": "https://token.actions.githubusercontent.com",
+  "name": "gh-actions-master",
+  "subject": "repo:punkouter26/PoJoker:ref:refs/heads/master",
+  "audiences": [
+    "api://AzureADTokenExchange"
+  ]
+}
