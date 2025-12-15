@@ -6,20 +6,7 @@ on:
   push:
     branches:
       - master
-  pull_request:
-    branches:
-      - master
   workflow_dispatch:
-    inputs:
-      environment:
-        description: 'Target environment'
-        required: true
-        default: 'dev'
-        type: choice
-        options:
-          - dev
-          - staging
-          - prod
 
 # Required for OIDC authentication with Azure
 permissions:
@@ -28,15 +15,11 @@ permissions:
 
 env:
   DOTNET_VERSION: '10.0.x'
-  AZURE_WEBAPP_NAME: pojoker-${{ inputs.environment || 'dev' }}-app
-  AZURE_RESOURCE_GROUP: PoJoker
-  AZURE_LOCATION: 'eastus'
-  AZURE_APP_SERVICE_PLAN_NAME: pojoker-shared-asp
-  AZURE_APP_SERVICE_PLAN_RG: poshared
+  AZURE_WEBAPP_NAME: 'pojoker-dev-app'
 
 jobs:
-  build:
-    name: Build & Test
+  build-and-deploy:
+    name: Build & Deploy
     runs-on: ubuntu-latest
     
     steps:
@@ -68,85 +51,6 @@ jobs:
       - name: Publish Web App
         run: dotnet publish src/Po.Joker/Po.Joker.csproj --configuration Release --output ./publish
 
-      - name: Upload publish artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: webapp
-          path: ./publish
-
-  infrastructure:
-    name: Deploy Infrastructure
-    needs: build
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-    environment: ${{ inputs.environment || 'dev' }}
-    
-    outputs:
-      webAppName: ${{ steps.deploy.outputs.webAppName }}
-      webAppHostname: ${{ steps.deploy.outputs.webAppHostname }}
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Azure Login (OIDC)
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-
-
-      - name: Create Resource Group
-        uses: azure/cli@v2
-        with:
-          azcliversion: latest
-          inlineScript: |
-            az group create \
-              --name PoJoker \
-              --location eastus \
-              --tags Application=Po.Joker Environment=${{ inputs.environment || 'dev' }}
-
-      - name: Deploy Bicep
-        id: deploy
-        uses: azure/arm-deploy@v2
-        with:
-          subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          resourceGroupName: PoJoker
-          template: ./infra/main.bicep
-          parameters: ./infra/main.bicepparam environment=${{ inputs.environment || 'dev' }}
-          failOnStdErr: false
-
-      - name: Grant Web App MI access to Foundry
-        uses: azure/cli@v2
-        with:
-          azcliversion: latest
-          inlineScript: |
-            WEB_APP_MI_ID=$(az webapp identity show --name pojoker-dev-app --resource-group PoJoker --query principalId -o tsv)
-            if [ ! -z "$WEB_APP_MI_ID" ]; then
-              az role assignment create \
-                --assignee-object-id "$WEB_APP_MI_ID" \
-                --role "Cognitive Services OpenAI User" \
-                --scope "/subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/resourceGroups/poshared/providers/Microsoft.CognitiveServices/accounts/poshared-openai" \
-                --assignee-principal-type "ServicePrincipal" 2>/dev/null || true
-            fi
-
-  deploy:
-    name: Deploy Application
-    needs: [build, infrastructure]
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-    environment:
-      name: ${{ inputs.environment || 'dev' }}
-      url: https://${{ needs.infrastructure.outputs.webAppHostname }}
-    
-    steps:
-      - name: Download publish artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: webapp
-          path: ./publish
-
       - name: Azure Login (OIDC)
         uses: azure/login@v2
         with:
@@ -157,7 +61,7 @@ jobs:
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
-          app-name: ${{ needs.infrastructure.outputs.webAppName }}
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
           package: ./publish
 
       - name: Health Check
@@ -165,7 +69,7 @@ jobs:
           echo "Waiting for deployment to complete..."
           sleep 30
           
-          HEALTH_URL="https://${{ needs.infrastructure.outputs.webAppHostname }}/health"
+          HEALTH_URL="https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net/health"
           echo "Checking health endpoint: $HEALTH_URL"
           
           for i in {1..10}; do
@@ -180,41 +84,3 @@ jobs:
           
           echo "❌ Health check failed after 10 attempts"
           exit 1
-
-  e2e-tests:
-    name: E2E Tests
-    needs: [deploy, infrastructure]
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
-          dotnet-quality: 'preview'
-
-      - name: Install Playwright
-        run: |
-          dotnet build tests/Po.Joker.Tests.E2E/Po.Joker.Tests.E2E.csproj
-          pwsh tests/Po.Joker.Tests.E2E/bin/Debug/net10.0/playwright.ps1 install chromium
-
-      - name: Run E2E Tests
-        env:
-          BASE_URL: https://${{ needs.infrastructure.outputs.webAppHostname }}
-        run: |
-          dotnet test tests/Po.Joker.Tests.E2E/Po.Joker.Tests.E2E.csproj \
-            --configuration Release \
-            --verbosity normal \
-            --logger trx \
-            --results-directory E2ETestResults
-
-      - name: Upload E2E Test Results
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: e2e-test-results
-          path: E2ETestResults
