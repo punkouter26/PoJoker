@@ -198,7 +198,9 @@ module budget './modules/budget.bicep' = {
 output webAppName string = webApp.outputs.name
 output webAppHostname string = webApp.outputs.defaultHostname
 output webAppResourceId string = webApp.outputs.resourceId
+@secure()
 output appInsightsConnectionString string = appInsights.outputs.connectionString
+@secure()
 output appInsightsInstrumentationKey string = appInsights.outputs.instrumentationKey
 output storageAccountName string = storageAccount.outputs.name
 output storageAccountResourceId string = storageAccount.outputs.resourceId
