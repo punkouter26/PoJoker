@@ -16,6 +16,12 @@ param baseName string = 'pojoker'
 @allowed(['B1', 'B2', 'B3', 'S1', 'S2', 'S3', 'P1v2', 'P2v2', 'P3v2'])
 param appServicePlanSku string = 'B1'
 
+@description('Use an existing App Service Plan from another resource group (e.g., poshared). When provided, the plan will not be created.')
+param existingAppServicePlanResourceGroup string = 'poshared'
+
+@description('Existing App Service Plan name to use from the specified resource group.')
+param existingAppServicePlanName string
+
 @description('OpenAI API Key (optional - for production joke generation)')
 @secure()
 param openAiApiKey string = ''
@@ -110,18 +116,10 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.19.0' = {
   }
 }
 
-// App Service Plan
-resource appServicePlan 'Microsoft.Web/serverfarms@2024-04-01' = {
-  name: appServicePlanName
-  location: location
-  tags: commonTags
-  kind: 'linux'
-  sku: {
-    name: appServicePlanSku
-  }
-  properties: {
-    reserved: true // Required for Linux
-  }
+// App Service Plan reference: use existing plan when provided
+resource appServicePlan 'Microsoft.Web/serverfarms@2024-04-01' existing = if (!empty(existingAppServicePlanName)) {
+  name: existingAppServicePlanName
+  scope: resourceGroup(existingAppServicePlanResourceGroup)
 }
 
 // Web App
@@ -131,14 +129,15 @@ module webApp 'br/public:avm/res/web/site:0.15.1' = {
     name: webAppName
     location: location
     kind: 'app,linux'
-    serverFarmResourceId: appServicePlan.id
+    serverFarmResourceId: empty(existingAppServicePlanName) ? resourceId('Microsoft.Web/serverfarms', appServicePlanName) : appServicePlan.id
     tags: commonTags
     managedIdentities: {
       systemAssigned: true
     }
     httpsOnly: true
     siteConfig: {
-      alwaysOn: appServicePlanSku != 'B1' // AlwaysOn not available on B1
+      // When using an existing plan, AlwaysOn depends on that plan's tier; default to true here
+      alwaysOn: true
       linuxFxVersion: 'DOTNETCORE|10.0'
       minTlsVersion: '1.2'
       ftpsState: 'FtpsOnly'
