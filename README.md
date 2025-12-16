@@ -123,7 +123,7 @@ az deployment group create \
 # Publish and deploy app
 dotnet publish src/Po.Joker -c Release -o ./publish
 az webapp deploy --resource-group rg-pojoker-dev \
-  --name pojoker-dev-app \
+   --name PoJoker \
   --src-path ./publish
 ```
 
