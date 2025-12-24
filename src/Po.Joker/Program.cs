@@ -64,6 +64,9 @@ app.UsePoJokerSwagger(app.Environment);
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseHttpsRedirection();
 
+// Serve static files from wwwroot
+app.UseStaticFiles();
+
 // Add Serilog request logging
 app.UsePoJokerRequestLogging();
 
