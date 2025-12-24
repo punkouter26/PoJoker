@@ -1,6 +1,6 @@
-# Po.Joker Azure Deployment
-# Build, Test, and Deploy to Azure App Service using OIDC authentication
-name: Deploy to Azure
+# Po.Joker Azure Container App Deployment
+# Build Docker container and deploy to Azure Container Apps
+name: Deploy to Azure Container Apps
 
 on:
   push:
@@ -8,18 +8,20 @@ on:
       - master
   workflow_dispatch:
 
-# Required for OIDC authentication with Azure
 permissions:
   id-token: write
   contents: read
 
 env:
-  DOTNET_VERSION: '10.0.x'
-  AZURE_WEBAPP_NAME: 'PoJoker'
+  DOTNET_VERSION: '9.0.x'
+  RESOURCE_GROUP: 'PoJoker'
+  CONTAINER_APP_NAME: 'pojoker-dev-app'
+  CONTAINER_REGISTRY: 'pojokerdevacr'
+  IMAGE_NAME: 'pojoker'
 
 jobs:
   build-and-deploy:
-    name: Build & Deploy
+    name: Build & Deploy to ACA
     runs-on: ubuntu-latest
     
     steps:
@@ -30,26 +32,6 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
-          dotnet-quality: 'preview'
-
-      - name: Restore dependencies
-        run: dotnet restore
-
-      - name: Build
-        run: dotnet build --configuration Release --no-restore
-
-      - name: Run Unit Tests
-        run: dotnet test tests/Po.Joker.Tests.Unit/Po.Joker.Tests.Unit.csproj --configuration Release --no-build --verbosity normal --logger trx --results-directory TestResults
-
-      - name: Upload Test Results
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: test-results
-          path: TestResults
-
-      - name: Publish Web App
-        run: dotnet publish src/Po.Joker/Po.Joker.csproj --configuration Release --output ./publish
 
       - name: Azure Login (OIDC)
         uses: azure/login@v2
@@ -58,24 +40,52 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Deploy to Azure Web App
-        uses: azure/webapps-deploy@v3
-        with:
-          app-name: ${{ env.AZURE_WEBAPP_NAME }}
-          package: ./publish
+      - name: Login to Azure Container Registry
+        run: |
+          az acr login --name ${{ env.CONTAINER_REGISTRY }}
+
+      - name: Build and Push Container Image
+        run: |
+          IMAGE_TAG="${{ env.CONTAINER_REGISTRY }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+          IMAGE_LATEST="${{ env.CONTAINER_REGISTRY }}.azurecr.io/${{ env.IMAGE_NAME }}:latest"
+          
+          docker build -t $IMAGE_TAG -t $IMAGE_LATEST .
+          docker push $IMAGE_TAG
+          docker push $IMAGE_LATEST
+          
+          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
+
+      - name: Deploy to Azure Container Apps
+        run: |
+          az containerapp update \
+            --name ${{ env.CONTAINER_APP_NAME }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --image ${{ env.IMAGE_TAG }}
+
+      - name: Get Container App URL
+        id: get-url
+        run: |
+          APP_URL=$(az containerapp show \
+            --name ${{ env.CONTAINER_APP_NAME }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --query properties.configuration.ingress.fqdn \
+            -o tsv)
+          echo "APP_URL=https://$APP_URL" >> $GITHUB_ENV
+          echo "Container App URL: https://$APP_URL"
 
       - name: Health Check
         run: |
           echo "Waiting for deployment to complete..."
           sleep 30
           
-          HEALTH_URL="https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net/health"
+          HEALTH_URL="${{ env.APP_URL }}/health"
           echo "Checking health endpoint: $HEALTH_URL"
           
           for i in {1..10}; do
             response=$(curl -s -o /dev/null -w "%{http_code}" "$HEALTH_URL" || echo "000")
             if [ "$response" = "200" ]; then
               echo "✅ Health check passed!"
+              echo "🚀 API is live at: ${{ env.APP_URL }}"
               exit 0
             fi
             echo "Attempt $i/10: HTTP $response, retrying in 10s..."

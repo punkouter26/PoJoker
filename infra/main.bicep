@@ -1,5 +1,5 @@
 // Po.Joker Azure Infrastructure
-// Deploys: App Service Plan, Web App, Storage Account, Application Insights, Log Analytics Workspace, Budget
+// Deploys: Container App Environment, Container App, Container Registry, Storage Account, Application Insights, Log Analytics Workspace, Budget
 targetScope = 'resourceGroup'
 
 @description('The environment name (dev, staging, prod)')
@@ -11,16 +11,6 @@ param location string = resourceGroup().location
 
 @description('Base name for all resources')
 param baseName string = 'pojoker'
-
-@description('The SKU for the App Service Plan')
-@allowed(['B1', 'B2', 'B3', 'S1', 'S2', 'S3', 'P1v2', 'P2v2', 'P3v2'])
-param appServicePlanSku string = 'B1'
-
-@description('Use an existing App Service Plan from another resource group (e.g., poshared). When provided, the plan will not be created.')
-param existingAppServicePlanResourceGroup string = 'poshared'
-
-@description('Existing App Service Plan name to use from the specified resource group.')
-param existingAppServicePlanName string
 
 @description('Azure AI Foundry / OpenAI endpoint')
 param openAiEndpoint string = 'https://poshared-openai.cognitiveservices.azure.com/'
@@ -37,10 +27,14 @@ param existingOpenAiAccountName string = 'poshared-openai'
 @description('Email address for budget alerts')
 param budgetAlertEmail string = 'punkouter26@gmail.com'
 
+@description('Container image to deploy')
+param containerImage string = 'mcr.microsoft.com/dotnet/samples:aspnetapp'
+
 // Computed names
 var resourcePrefix = '${baseName}-${environment}'
-var appServicePlanName = '${resourcePrefix}-plan'
-var webAppName = '${resourcePrefix}-app'
+var containerAppName = '${resourcePrefix}-app'
+var containerAppEnvName = '${resourcePrefix}-env'
+var containerRegistryName = replace(toLower('${baseName}${environment}acr'), '-', '')
 var storageAccountName = replace(toLower('${baseName}${environment}st'), '-', '')
 var logAnalyticsName = '${resourcePrefix}-logs'
 var appInsightsName = '${resourcePrefix}-insights'
@@ -121,10 +115,18 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.19.0' = {
   }
 }
 
-// App Service Plan reference: use existing plan when provided
-resource appServicePlan 'Microsoft.Web/serverfarms@2024-04-01' existing = if (!empty(existingAppServicePlanName)) {
-  name: existingAppServicePlanName
-  scope: resourceGroup(existingAppServicePlanResourceGroup)
+// Container Registry
+resource containerRegistry 'Microsoft.ContainerRegistry/registries@2023-11-01-preview' = {
+  name: containerRegistryName
+  location: location
+  tags: commonTags
+  sku: {
+    name: 'Basic'
+  }
+  properties: {
+    adminUserEnabled: true
+    publicNetworkAccess: 'Enabled'
+  }
 }
 
 // Shared Azure AI Foundry / OpenAI account
@@ -133,70 +135,139 @@ resource openAi 'Microsoft.CognitiveServices/accounts@2024-10-01-preview' existi
   scope: resourceGroup(existingOpenAiResourceGroup)
 }
 
-// Web App
-module webApp 'br/public:avm/res/web/site:0.15.1' = {
-  name: 'webApp'
-  params: {
-    name: webAppName
-    location: location
-    kind: 'app,linux'
-    serverFarmResourceId: empty(existingAppServicePlanName) ? resourceId('Microsoft.Web/serverfarms', appServicePlanName) : appServicePlan.id
-    tags: commonTags
-    managedIdentities: {
-      systemAssigned: true
-    }
-    httpsOnly: true
-    siteConfig: {
-      // When using an existing plan, AlwaysOn depends on that plan's tier; default to true here
-      alwaysOn: true
-      linuxFxVersion: 'DOTNETCORE|10.0'
-      minTlsVersion: '1.2'
-      ftpsState: 'FtpsOnly'
-      healthCheckPath: '/health'
-      metadata: [
-        {
-          name: 'CURRENT_STACK'
-          value: 'dotnetcore'
-        }
-      ]
-    }
-    appSettingsKeyValuePairs: {
-      APPLICATIONINSIGHTS_CONNECTION_STRING: appInsights.outputs.connectionString
-      ASPNETCORE_ENVIRONMENT: environment == 'prod' ? 'Production' : 'Development'
-      Azure__StorageAccountName: storageAccount.outputs.name
-      Azure__OpenAI__Endpoint: openAiEndpoint
-      Azure__OpenAI__DeploymentName: openAiDeploymentName
-      JokeSettings__CacheEnabled: 'true'
-      JokeSettings__RateLimitPerMinute: '60'
-      // App Insights Snapshot Debugger and Profiler (T115)
-      DiagnosticServices_EXTENSION_VERSION: '~3'
-      InstrumentationEngine_EXTENSION_VERSION: 'disabled'
-      SnapshotDebugger_EXTENSION_VERSION: 'disabled'
-      XDT_MicrosoftApplicationInsights_BaseExtensions: 'disabled'
-      XDT_MicrosoftApplicationInsights_Mode: 'recommended'
-      XDT_MicrosoftApplicationInsights_PreemptSdk: '1'
-      APPINSIGHTS_PROFILERFEATURE_VERSION: environment == 'prod' ? '1.0.0' : 'disabled'
-      APPINSIGHTS_SNAPSHOTFEATURE_VERSION: environment == 'prod' ? '1.0.0' : 'disabled'
+// Container App Environment
+resource containerAppEnvironment 'Microsoft.App/managedEnvironments@2024-03-01' = {
+  name: containerAppEnvName
+  location: location
+  tags: commonTags
+  properties: {
+    appLogsConfiguration: {
+      destination: 'log-analytics'
+      logAnalyticsConfiguration: {
+        customerId: logAnalytics.properties.customerId
+        sharedKey: logAnalytics.listKeys().primarySharedKey
+      }
     }
   }
 }
 
-// Role assignment for Web App to access Storage Account
-var roleAssignmentName = guid(resourceGroup().id, storageAccountName, webAppName, 'Storage Blob Data Contributor')
+// Container App
+resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
+  name: containerAppName
+  location: location
+  tags: commonTags
+  identity: {
+    type: 'SystemAssigned'
+  }
+  properties: {
+    managedEnvironmentId: containerAppEnvironment.id
+    configuration: {
+      ingress: {
+        external: true
+        targetPort: 8080
+        transport: 'auto'
+        allowInsecure: false
+      }
+      registries: [
+        {
+          server: containerRegistry.properties.loginServer
+          username: containerRegistry.name
+          passwordSecretRef: 'registry-password'
+        }
+      ]
+      secrets: [
+        {
+          name: 'registry-password'
+          value: containerRegistry.listCredentials().passwords[0].value
+        }
+        {
+          name: 'appinsights-connection-string'
+          value: appInsights.outputs.connectionString
+        }
+      ]
+    }
+    template: {
+      containers: [
+        {
+          name: 'pojoker'
+          image: containerImage
+          resources: {
+            cpu: json('0.5')
+            memory: '1Gi'
+          }
+          env: [
+            {
+              name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
+              secretRef: 'appinsights-connection-string'
+            }
+            {
+              name: 'ASPNETCORE_ENVIRONMENT'
+              value: environment == 'prod' ? 'Production' : 'Development'
+            }
+            {
+              name: 'Azure__StorageAccountName'
+              value: storageAccount.outputs.name
+            }
+            {
+              name: 'Azure__OpenAI__Endpoint'
+              value: openAiEndpoint
+            }
+            {
+              name: 'Azure__OpenAI__DeploymentName'
+              value: openAiDeploymentName
+            }
+            {
+              name: 'JokeSettings__CacheEnabled'
+              value: 'true'
+            }
+            {
+              name: 'JokeSettings__RateLimitPerMinute'
+              value: '60'
+            }
+          ]
+        }
+      ]
+      scale: {
+        minReplicas: 1
+        maxReplicas: 3
+        rules: [
+          {
+            name: 'http-scaling'
+            http: {
+              metadata: {
+                concurrentRequests: '100'
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}
+
+// Role assignment for Container App to access Storage Account
+var storageRoleAssignmentName = guid(resourceGroup().id, storageAccountName, containerAppName, 'Storage Blob Data Contributor')
 resource storageRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: roleAssignmentName
+  name: storageRoleAssignmentName
   scope: resourceGroup()
   properties: {
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'ba92f5b4-2d11-453d-a403-e96b0029c9fe') // Storage Blob Data Contributor
-    principalId: webApp.outputs.systemAssignedMIPrincipalId!
+    principalId: containerApp.identity.principalId
     principalType: 'ServicePrincipal'
   }
 }
 
-// Role assignment for Web App to call Azure AI Foundry/OpenAI
-// Note: The web app MI role assignment should be pre-provisioned in poshared RG
-// to avoid cross-RG deployment complexities. Ensure web app MI has 
-// "Cognitive Services OpenAI User" role on the poshared-openai account.
+// Role assignment for Container App to access Storage Tables
+var tableRoleAssignmentName = guid(resourceGroup().id, storageAccountName, containerAppName, 'Storage Table Data Contributor')
+resource tableRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: tableRoleAssignmentName
+  scope: resourceGroup()
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '0a9a7e1f-b9d0-4cc4-a60d-0319b160aaa3') // Storage Table Data Contributor
+    principalId: containerApp.identity.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
 
 // Budget for cost management
 module budget './modules/budget.bicep' = {
@@ -210,9 +281,11 @@ module budget './modules/budget.bicep' = {
 }
 
 // Outputs
-output webAppName string = webApp.outputs.name
-output webAppHostname string = webApp.outputs.defaultHostname
-output webAppResourceId string = webApp.outputs.resourceId
+output containerAppName string = containerApp.name
+output containerAppFqdn string = containerApp.properties.configuration.ingress.fqdn
+output containerAppUrl string = 'https://${containerApp.properties.configuration.ingress.fqdn}'
+output containerRegistryName string = containerRegistry.name
+output containerRegistryLoginServer string = containerRegistry.properties.loginServer
 @secure()
 output appInsightsConnectionString string = appInsights.outputs.connectionString
 @secure()
