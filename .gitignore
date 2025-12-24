@@ -131,6 +131,7 @@ __tablestorage__/
 ApplicationInsights.config
 
 # Misc
+.aspire/
 *.swp
 *.bak
 *.backup
