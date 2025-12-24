@@ -13,7 +13,7 @@ permissions:
   contents: read
 
 env:
-  DOTNET_VERSION: '9.0.x'
+  DOTNET_VERSION: '10.0.x'
   RESOURCE_GROUP: 'PoJoker'
   CONTAINER_APP_NAME: 'pojoker-dev-app'
   CONTAINER_REGISTRY: 'pojokerdevacr'
