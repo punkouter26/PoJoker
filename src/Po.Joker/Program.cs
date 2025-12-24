@@ -22,7 +22,7 @@ builder.Host.UsePoJokerSerilog();
 // Add services to the container
 builder.Services.AddPoJokerBlazor();
 builder.Services.AddPoJokerMediatR();
-builder.Services.AddPoJokerTelemetry(builder.Configuration);
+builder.Services.AddPoJokerTelemetry(builder.Configuration, builder.Environment);
 
 // Add Aspire Azure Table Storage (connection managed by Aspire AppHost)
 builder.AddAzureTableClient("tables");

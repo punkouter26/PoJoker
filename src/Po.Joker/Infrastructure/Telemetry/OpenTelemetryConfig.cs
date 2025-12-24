@@ -54,7 +54,8 @@ public static class OpenTelemetryConfig
     /// </summary>
     public static IServiceCollection AddPoJokerTelemetry(
         this IServiceCollection services,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        IHostEnvironment environment)
     {
         var appInsightsConnectionString = configuration["ApplicationInsights:ConnectionString"];
 
@@ -66,8 +67,13 @@ public static class OpenTelemetryConfig
                 tracing
                     .AddSource(ServiceName)
                     .AddAspNetCoreInstrumentation()
-                    .AddHttpClientInstrumentation()
-                    .AddConsoleExporter();
+                    .AddHttpClientInstrumentation();
+
+                // Only enable console exporter in Development to avoid verbose metric dumps in production
+                if (environment.IsDevelopment())
+                {
+                    tracing.AddConsoleExporter();
+                }
 
                 if (!string.IsNullOrEmpty(appInsightsConnectionString))
                 {
@@ -82,8 +88,13 @@ public static class OpenTelemetryConfig
                 metrics
                     .AddMeter(ServiceName)
                     .AddAspNetCoreInstrumentation()
-                    .AddHttpClientInstrumentation()
-                    .AddConsoleExporter();
+                    .AddHttpClientInstrumentation();
+
+                // Only enable console exporter in Development to avoid verbose metric dumps in production
+                if (environment.IsDevelopment())
+                {
+                    metrics.AddConsoleExporter();
+                }
 
                 if (!string.IsNullOrEmpty(appInsightsConnectionString))
                 {
