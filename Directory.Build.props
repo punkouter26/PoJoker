@@ -8,6 +8,8 @@
     <WarningsAsErrors />
     <NoWarn>$(NoWarn);CS1591</NoWarn>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <!-- Allow KubernetesClient audit warning (transitive from Aspire) -->
+    <NoWarn>$(NoWarn);NU1902</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">

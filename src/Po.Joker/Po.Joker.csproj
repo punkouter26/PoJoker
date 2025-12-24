@@ -11,6 +11,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Po.Joker.Client\Po.Joker.Client.csproj" />
     <ProjectReference Include="..\Po.Joker.Shared\Po.Joker.Shared.csproj" />
+    <ProjectReference Include="..\PoJoker.ServiceDefaults\PoJoker.ServiceDefaults.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -40,8 +41,8 @@
     <PackageReference Include="Azure.Monitor.OpenTelemetry.Exporter" />
     
     <!-- Azure Services -->
+    <PackageReference Include="Aspire.Azure.Data.Tables" />
     <PackageReference Include="Azure.AI.OpenAI" />
-    <PackageReference Include="Azure.Data.Tables" />
     <PackageReference Include="Azure.Identity" />
     <PackageReference Include="Azure.Extensions.AspNetCore.Configuration.Secrets" />
     

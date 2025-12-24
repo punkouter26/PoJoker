@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Mvc.Testing;
 using System.Net;
 using System.Net.Http.Json;
 using FluentAssertions;
@@ -10,12 +9,12 @@ namespace Po.Joker.Tests.Integration.Features;
 /// Integration tests for GET /api/diagnostics endpoint.
 /// Tests the full HTTP pipeline for diagnostics and health checks.
 /// </summary>
-public class DiagnosticsEndpointTests : IClassFixture<WebApplicationFactory<Program>>
+public class DiagnosticsEndpointTests : IClassFixture<PoJokerWebApplicationFactory>
 {
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly PoJokerWebApplicationFactory _factory;
     private readonly HttpClient _client;
 
-    public DiagnosticsEndpointTests(WebApplicationFactory<Program> factory)
+    public DiagnosticsEndpointTests(PoJokerWebApplicationFactory factory)
     {
         _factory = factory;
         _client = _factory.CreateClient();

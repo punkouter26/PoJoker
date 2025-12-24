@@ -24,35 +24,48 @@ A passive AI comedy application where an AI Jester fetches jokes, attempts to pr
 
 - [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) (Preview)
 - [Azure CLI](https://docs.microsoft.com/cli/azure/install-azure-cli) (for deployment)
-- [Azurite](https://learn.microsoft.com/azure/storage/common/storage-use-azurite) (for local Table Storage)
+- [Docker Desktop](https://www.docker.com/products/docker-desktop) (for Aspire local development)
 
-### Local Development
+### Local Development with .NET Aspire (Recommended)
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/your-org/PoJoker.git
-   cd PoJoker
-   ```
+**Single command to start everything:**
 
-2. **Start Azurite for local storage**
+```bash
+dotnet run --project src/PoJoker.AppHost
+```
+
+This will:
+- 🚀 Start the **Aspire Dashboard** for monitoring all services
+- 📦 Spin up **Azurite** container for local storage (persistent across restarts)
+- 🌐 Launch the **Po.Joker** Blazor application
+- 🔗 Automatically wire up all service connections
+
+The **Aspire Dashboard** will open automatically and show:
+- All running services and their status
+- Real-time logs from all services
+- Distributed traces across requests
+- Metrics and health checks
+
+### Configure AI Features (Optional)
+
+```bash
+cd src/PoJoker.AppHost
+dotnet user-secrets set "Azure:OpenAI:Endpoint" "your-endpoint"
+```
+
+### Alternative: Standalone Development
+
+If you prefer not to use Aspire:
+
+1. **Start Azurite manually**
    ```bash
    azurite --silent --location ./azurite --debug ./azurite/debug.log
    ```
 
-3. **Configure secrets (optional - for AI features)**
-   ```bash
-   cd src/Po.Joker
-   dotnet user-secrets init
-   dotnet user-secrets set "OpenAI:ApiKey" "your-api-key"
-   ```
-
-4. **Run the application**
+2. **Run the application directly**
    ```bash
    dotnet run --project src/Po.Joker
    ```
-
-5. **Open in browser**
-   Navigate to `https://localhost:5001`
 
 ### Running Tests
 
@@ -69,9 +82,13 @@ dotnet test tests/Po.Joker.Tests.E2E
 
 ## 🏗️ Architecture
 
+This application uses **.NET Aspire** for orchestration and service discovery.
+
 ```
-Po.Joker/
+PoJoker/
 ├── src/
+│   ├── PoJoker.AppHost/        # 🚀 Aspire orchestrator (start here!)
+│   ├── PoJoker.ServiceDefaults/ # Shared service defaults (telemetry, resilience)
 │   ├── Po.Joker/               # Server-side Blazor + API endpoints
 │   │   ├── Features/           # Vertical slice architecture
 │   │   │   ├── Jokes/          # Joke fetching from JokeAPI
@@ -87,6 +104,15 @@ Po.Joker/
 ├── infra/                       # Bicep IaC templates
 └── docs/                        # Documentation
 ```
+
+### Aspire Stack
+
+| Component | Purpose |
+|-----------|---------|
+| **PoJoker.AppHost** | Orchestrates all services, manages Azurite container |
+| **PoJoker.ServiceDefaults** | OpenTelemetry, health checks, service discovery, resilience |
+| **Po.Joker** | Main Blazor Server + WASM application |
+| **Azurite** | Local Azure Table Storage emulator (Docker container) |
 
 ## ☁️ Azure Deployment
 

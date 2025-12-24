@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Mvc.Testing;
 using System.Net;
 using System.Net.Http.Json;
 using FluentAssertions;
@@ -10,12 +9,12 @@ namespace Po.Joker.Tests.Integration.Features;
 /// Integration tests for GET /api/leaderboard endpoint.
 /// Tests the full HTTP pipeline for leaderboard operations.
 /// </summary>
-public class LeaderboardEndpointTests : IClassFixture<WebApplicationFactory<Program>>
+public class LeaderboardEndpointTests : IClassFixture<PoJokerWebApplicationFactory>
 {
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly PoJokerWebApplicationFactory _factory;
     private readonly HttpClient _client;
 
-    public LeaderboardEndpointTests(WebApplicationFactory<Program> factory)
+    public LeaderboardEndpointTests(PoJokerWebApplicationFactory factory)
     {
         _factory = factory;
         _client = _factory.CreateClient();

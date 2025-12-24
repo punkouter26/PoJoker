@@ -10,6 +10,9 @@ using Po.Joker.Infrastructure.Telemetry;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Add Aspire ServiceDefaults (telemetry, health checks, resilience, service discovery)
+builder.AddServiceDefaults();
+
 // Configure Azure Key Vault for both local and deployed environments
 builder.Configuration.AddPoJokerKeyVault(builder.Environment);
 
@@ -20,8 +23,12 @@ builder.Host.UsePoJokerSerilog();
 builder.Services.AddPoJokerBlazor();
 builder.Services.AddPoJokerMediatR();
 builder.Services.AddPoJokerTelemetry(builder.Configuration);
-builder.Services.AddPoJokerStorage(builder.Configuration, builder.Environment);
+
+// Add Aspire Azure Table Storage (connection managed by Aspire AppHost)
+builder.AddAzureTableClient("tables");
+builder.Services.AddPoJokerTableStorage();
 builder.Services.AddScoped<IJokeStorageClient, JokeStorageClient>();
+
 builder.Services.AddPoJokerHttpClients();
 builder.Services.AddPoJokerAzureOpenAI(builder.Configuration, builder.Environment);
 

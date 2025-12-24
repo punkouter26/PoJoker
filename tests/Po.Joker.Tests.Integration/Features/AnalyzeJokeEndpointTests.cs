@@ -1,11 +1,7 @@
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.DependencyInjection;
 using System.Net;
 using System.Net.Http.Json;
 using FluentAssertions;
 using Po.Joker.Shared.DTOs;
-using Po.Joker.Shared.Contracts;
-using Po.Joker.Features.Analysis;
 
 namespace Po.Joker.Tests.Integration.Features;
 
@@ -14,27 +10,14 @@ namespace Po.Joker.Tests.Integration.Features;
 /// These tests verify AI analysis of jokes through the full pipeline.
 /// Uses MockAnalysisService to avoid calling real Azure OpenAI (no cost).
 /// </summary>
-public class AnalyzeJokeEndpointTests : IClassFixture<WebApplicationFactory<Program>>
+public class AnalyzeJokeEndpointTests : IClassFixture<PoJokerWebApplicationFactory>
 {
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly PoJokerWebApplicationFactory _factory;
     private readonly HttpClient _client;
 
-    public AnalyzeJokeEndpointTests(WebApplicationFactory<Program> factory)
+    public AnalyzeJokeEndpointTests(PoJokerWebApplicationFactory factory)
     {
-        _factory = factory.WithWebHostBuilder(builder =>
-        {
-            builder.ConfigureServices(services =>
-            {
-                // Replace the real AI service with mock to avoid Azure OpenAI costs
-                var descriptor = services.SingleOrDefault(
-                    d => d.ServiceType == typeof(IAnalysisService));
-                if (descriptor != null)
-                {
-                    services.Remove(descriptor);
-                }
-                services.AddSingleton<IAnalysisService, MockAnalysisService>();
-            });
-        });
+        _factory = factory;
         _client = _factory.CreateClient();
     }
 

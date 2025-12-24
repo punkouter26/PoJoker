@@ -2,14 +2,15 @@
 
 name: pojoker
 metadata:
-  template: pojoker@0.0.1-beta
+  template: pojoker-aspire@0.0.1-beta
 
+# Aspire AppHost generates infrastructure from code
 services:
-  web:
-    project: ./src/Po.Joker
+  apphost:
+    project: ./src/PoJoker.AppHost
     language: dotnet
-    host: appservice
-    
+    host: containerapp
+
 infra:
   provider: bicep
   path: ./infra

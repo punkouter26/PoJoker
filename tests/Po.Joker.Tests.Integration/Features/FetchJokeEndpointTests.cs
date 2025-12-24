@@ -1,5 +1,3 @@
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.DependencyInjection;
 using System.Net;
 using System.Net.Http.Json;
 using FluentAssertions;
@@ -11,20 +9,14 @@ namespace Po.Joker.Tests.Integration.Features;
 /// TDD integration tests for GET /api/jokes/fetch endpoint.
 /// These tests use WebApplicationFactory to test the full HTTP pipeline.
 /// </summary>
-public class FetchJokeEndpointTests : IClassFixture<WebApplicationFactory<Program>>
+public class FetchJokeEndpointTests : IClassFixture<PoJokerWebApplicationFactory>
 {
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly PoJokerWebApplicationFactory _factory;
     private readonly HttpClient _client;
 
-    public FetchJokeEndpointTests(WebApplicationFactory<Program> factory)
+    public FetchJokeEndpointTests(PoJokerWebApplicationFactory factory)
     {
-        _factory = factory.WithWebHostBuilder(builder =>
-        {
-            builder.ConfigureServices(services =>
-            {
-                // Configure test services here
-            });
-        });
+        _factory = factory;
         _client = _factory.CreateClient();
     }
 
