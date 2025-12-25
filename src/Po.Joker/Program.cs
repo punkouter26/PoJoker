@@ -19,6 +19,9 @@ builder.Configuration.AddPoJokerKeyVault(builder.Environment);
 // Configure Serilog
 builder.Host.UsePoJokerSerilog();
 
+// Enable static web assets (required for Blazor WebAssembly files)
+builder.WebHost.UseStaticWebAssets();
+
 // Add services to the container
 builder.Services.AddPoJokerBlazor();
 builder.Services.AddPoJokerMediatR();
