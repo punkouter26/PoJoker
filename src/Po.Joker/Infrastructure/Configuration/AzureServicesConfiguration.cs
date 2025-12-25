@@ -23,9 +23,14 @@ public static class AzureServicesConfiguration
     {
         var config = configuration.Build();
         var keyVaultUri = config["Azure:KeyVaultUri"] ?? "https://pojoker-kv.vault.azure.net/";
-        var credential = environment.IsDevelopment()
-            ? new AzureCliCredential()
-            : (TokenCredential)new DefaultAzureCredential();
+
+        // Use DefaultAzureCredential which supports Managed Identity in Azure and developer credentials (Azure CLI, Visual Studio) locally.
+        // This avoids failing in containers where Azure CLI is not available.
+        var credential = new DefaultAzureCredential(new DefaultAzureCredentialOptions
+        {
+            // Allow CLI in development machines; DefaultAzureCredential will attempt CLI/VS credentials when available.
+            ExcludeAzureCliCredential = false
+        });
 
         configuration.AddAzureKeyVault(new Uri(keyVaultUri), credential);
         return configuration;
@@ -45,9 +50,11 @@ public static class AzureServicesConfiguration
 
         services.AddSingleton(sp =>
         {
-            var aiCredential = environment.IsDevelopment()
-                ? new AzureCliCredential()
-                : (TokenCredential)new DefaultAzureCredential();
+            // Use DefaultAzureCredential so production uses Managed Identity and developers can use CLI/VS creds.
+            var aiCredential = new DefaultAzureCredential(new DefaultAzureCredentialOptions
+            {
+                ExcludeAzureCliCredential = false
+            });
             return new AzureOpenAIClient(new Uri(openAiEndpoint), aiCredential);
         });
 

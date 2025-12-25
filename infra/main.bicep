@@ -30,6 +30,9 @@ param budgetAlertEmail string = 'punkouter26@gmail.com'
 @description('Container image to deploy')
 param containerImage string = 'mcr.microsoft.com/dotnet/samples:aspnetapp'
 
+@description('Existing Key Vault name to grant access to the Container App')
+param keyVaultName string = 'pojoker-kv'
+
 // Computed names
 var resourcePrefix = '${baseName}-${environment}'
 var containerAppName = '${resourcePrefix}-app'
@@ -264,6 +267,25 @@ resource tableRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01
   scope: resourceGroup()
   properties: {
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '0a9a7e1f-b9d0-4cc4-a60d-0319b160aaa3') // Storage Table Data Contributor
+    principalId: containerApp.identity.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+// Key Vault role assignment - grant Container App access to read secrets from Key Vault
+resource keyVault 'Microsoft.KeyVault/vaults@2021-10-01' existing = {
+  name: keyVaultName
+}
+
+var keyVaultRoleAssignmentName = guid(resourceGroup().id, keyVault.name, containerAppName, 'KeyVaultSecretsUser')
+resource keyVaultRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: keyVaultRoleAssignmentName
+  scope: keyVault
+  dependsOn: [
+    containerApp
+  ]
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '4633458b-17de-408a-b874-0445c86b69e6') // Key Vault Secrets User
     principalId: containerApp.identity.principalId
     principalType: 'ServicePrincipal'
   }
