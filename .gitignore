@@ -136,3 +136,6 @@ ApplicationInsights.config
 *.bak
 *.backup
 *~
+
+# azd agent logs
+azd-agent-*.log
