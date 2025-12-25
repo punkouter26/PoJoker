@@ -1,5 +1,5 @@
-# Po.Joker Azure Container App Deployment
-# Build Docker container and deploy to Azure Container Apps
+# Azure Container Apps deployment via Azure Developer CLI (azd)
+# Triggered on push to master or manual dispatch
 name: Deploy to Azure Container Apps
 
 on:
@@ -12,65 +12,30 @@ permissions:
   id-token: write
   contents: read
 
-env:
-  DOTNET_VERSION: '10.0.x'
-  RESOURCE_GROUP: 'PoJoker'
-  CONTAINER_APP_NAME: 'pojoker-dev-app'
-  CONTAINER_REGISTRY: 'pojokerdevacr'
-  IMAGE_NAME: 'pojoker'
-
 jobs:
   build-and-deploy:
     name: Build & Deploy to ACA
     runs-on: ubuntu-latest
-    
+    env:
+      AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+      AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+      AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      AZURE_ENV_NAME: ${{ vars.AZURE_ENV_NAME }}
+      AZURE_LOCATION: ${{ vars.AZURE_LOCATION }}
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - name: Install azd
+        uses: Azure/setup-azd@v2
 
-      - name: Azure Login (OIDC)
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-
-      - name: Login to Azure Container Registry
+      - name: Log in with Azure (Federated Credentials)
         run: |
-          az acr login --name ${{ env.CONTAINER_REGISTRY }}
-
-      - name: Build and Push Container Image
-        run: |
-          IMAGE_TAG="${{ env.CONTAINER_REGISTRY }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ github.sha }}"
-          IMAGE_LATEST="${{ env.CONTAINER_REGISTRY }}.azurecr.io/${{ env.IMAGE_NAME }}:latest"
-          
-          docker build -t $IMAGE_TAG -t $IMAGE_LATEST .
-          docker push $IMAGE_TAG
-          docker push $IMAGE_LATEST
-          
-          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
+          azd auth login `
+            --client-id "$Env:AZURE_CLIENT_ID" `
+            --federated-credential-provider "github" `
+            --tenant-id "$Env:AZURE_TENANT_ID"
+        shell: pwsh
 
       - name: Deploy to Azure Container Apps
-        run: |
-          az containerapp update \
-            --name ${{ env.CONTAINER_APP_NAME }} \
-            --resource-group ${{ env.RESOURCE_GROUP }} \
-            --image "$IMAGE_TAG"
-
-      - name: Get Container App URL
-        id: get-url
-        run: |
-          APP_URL=$(az containerapp show \
-            --name ${{ env.CONTAINER_APP_NAME }} \
-            --resource-group ${{ env.RESOURCE_GROUP }} \
-            --query properties.configuration.ingress.fqdn \
-            -o tsv)
-          echo "APP_URL=https://$APP_URL" >> $GITHUB_ENV
-          echo "Container App URL: https://$APP_URL"
-
-      # Health check step removed: avoid CI failure when /health is not ready or returns non-200
+        run: azd up --no-prompt

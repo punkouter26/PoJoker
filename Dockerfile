@@ -22,7 +22,7 @@ COPY src/ src/
 
 # Build and publish
 WORKDIR /src/src/Po.Joker
-RUN dotnet publish -c Release -o /app/publish --no-restore
+RUN dotnet publish "Po.Joker.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
 # Runtime stage
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime

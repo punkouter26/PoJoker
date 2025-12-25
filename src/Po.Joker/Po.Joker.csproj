@@ -6,6 +6,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
     <UserSecretsId>po-joker-dev</UserSecretsId>
+    <!-- Required for Blazor WebAssembly hosting in container deployments -->
+    <StaticWebAssetProjectMode>All</StaticWebAssetProjectMode>
+    <WasmBlazorWebAssemblyHost>true</WasmBlazorWebAssemblyHost>
   </PropertyGroup>
 
   <ItemGroup>
