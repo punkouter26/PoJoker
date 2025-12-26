@@ -147,6 +147,9 @@ with:
   creds: ${{ secrets.AZURE_CREDENTIALS }}
 ```
 
+   - Ensure the secret value is valid JSON and contains these keys exactly (case-sensitive): `clientId`, `clientSecret`, `tenantId`, `subscriptionId`.
+   - After adding the secret, the workflow includes a verification step (`az account show` and `azd --version`) that will fail early if login doesn't succeed.
+
 3. **Deploy via workflow**
    - Push to `main` branch for automatic deployment
    - Use manual workflow dispatch for specific environments

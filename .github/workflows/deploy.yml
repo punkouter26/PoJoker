@@ -29,14 +29,39 @@ jobs:
       - name: Install azd
         uses: Azure/setup-azd@v2
 
+      - name: Check Azure credentials
+        run: |
+          echo "Checking Azure credentials..."
+          if [ -z "${{ secrets.AZURE_CREDENTIALS }}" ] && ( [ -z "${{ vars.AZURE_CLIENT_ID }}" ] || [ -z "${{ vars.AZURE_TENANT_ID }}" ] || [ -z "${{ vars.AZURE_SUBSCRIPTION_ID }}" ] ); then
+            echo "Missing Azure credentials. Set either a secret 'AZURE_CREDENTIALS' (service principal JSON) or set repository variables 'AZURE_CLIENT_ID', 'AZURE_TENANT_ID', 'AZURE_SUBSCRIPTION_ID' for OIDC authentication."
+            exit 1
+          fi
+
+      - name: Auth method
+        run: |
+          if [ -n "${{ secrets.AZURE_CREDENTIALS }}" ]; then
+            echo "Using: AZURE_CREDENTIALS (Service Principal secret)"
+          else
+            echo "Using: OIDC (AZURE_CLIENT_ID / AZURE_TENANT_ID / AZURE_SUBSCRIPTION_ID)"
+          fi
 
 
 
 
-      - name: Azure Login
+
+      - name: Azure Login (Service Principal)
+        if: ${{ secrets.AZURE_CREDENTIALS != '' }}
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Azure Login (OIDC)
+        if: ${{ secrets.AZURE_CREDENTIALS == '' && vars.AZURE_CLIENT_ID != '' }}
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
       - name: Verify Azure login
         run: |
