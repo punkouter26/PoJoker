@@ -29,8 +29,7 @@ jobs:
       - name: Install azd
         uses: Azure/setup-azd@v2
 
-      - name: Check azd version
-        run: azd --version
+
 
       - name: Log in with Azure (Federated Credentials)
         run: |
