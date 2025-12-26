@@ -3,10 +3,12 @@ using Po.Joker.Features.Analysis;
 using Po.Joker.Features.Diagnostics;
 using Po.Joker.Features.Jokes;
 using Po.Joker.Features.Leaderboards;
+using Po.Joker.Shared.Contracts;
 using Po.Joker.Infrastructure.Configuration;
 using Po.Joker.Infrastructure.ExceptionHandling;
 using Po.Joker.Infrastructure.Storage;
 using Po.Joker.Infrastructure.Telemetry;
+using System.Linq;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -44,7 +46,16 @@ builder.Services.AddPoJokerTableStorage();
 builder.Services.AddScoped<IJokeStorageClient, JokeStorageClient>();
 
 builder.Services.AddPoJokerHttpClients();
-builder.Services.AddPoJokerAzureOpenAI(builder.Configuration, builder.Environment);
+// Configure Azure OpenAI or use mock implementation to avoid external calls during local/E2E runs
+if (!string.Equals(Environment.GetEnvironmentVariable("POJOKER_USE_MOCK_AI"), "true", StringComparison.OrdinalIgnoreCase))
+{
+    builder.Services.AddPoJokerAzureOpenAI(builder.Configuration, builder.Environment);
+}
+else
+{
+    // Use MockAnalysisService for local E2E or CI environments to avoid hitting paid AI services
+    builder.Services.AddScoped<IAnalysisService, MockAnalysisService>();
+}
 
 // Add exception handler
 builder.Services.AddExceptionHandler<JesterExceptionHandler>();
@@ -99,9 +110,21 @@ app.MapLeaderboardEndpoints();
 app.MapDiagnosticsEndpoints();
 
 app.MapStaticAssets();
+
+// Configure Razor Components and interactive render modes. Avoid adding duplicate assemblies
+var additionalAssemblies = new[]
+{
+    typeof(Po.Joker.Client._Imports).Assembly,
+    typeof(Po.Joker.Components.App).Assembly
+}
+.Where(a => a != typeof(Program).Assembly)
+.GroupBy(a => a.FullName)
+.Select(g => g.First())
+.ToArray();
+
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode()
     .AddInteractiveWebAssemblyRenderMode()
-    .AddAdditionalAssemblies(typeof(Po.Joker.Client._Imports).Assembly);
+    .AddAdditionalAssemblies(additionalAssemblies);
 
 app.Run();
