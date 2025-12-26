@@ -31,13 +31,7 @@ jobs:
 
 
 
-      - name: Log in with Azure (Federated Credentials)
-        run: |
-          azd auth login `
-            --client-id "$Env:AZURE_CLIENT_ID" `
-            --federated-credential-provider "github" `
-            --tenant-id "$Env:AZURE_TENANT_ID"
-        shell: pwsh
+
 
       - name: Deploy to Azure Container Apps
         run: azd up --no-prompt
