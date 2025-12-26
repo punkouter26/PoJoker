@@ -37,9 +37,23 @@ jobs:
             exit 1
           fi
 
+      - name: Determine auth method
+        id: auth
+        run: |
+          echo "Determining auth method..."
+          if [ -n "${{ secrets.AZURE_CREDENTIALS }}" ]; then
+            echo "use_sp=true" >> $GITHUB_OUTPUT
+          elif [ -n "${{ vars.AZURE_CLIENT_ID }}" ] && [ -n "${{ vars.AZURE_TENANT_ID }}" ] && [ -n "${{ vars.AZURE_SUBSCRIPTION_ID }}" ]; then
+            echo "use_oidc=true" >> $GITHUB_OUTPUT
+          else
+            echo "no_creds=true" >> $GITHUB_OUTPUT
+            echo "Missing Azure credentials. Set either 'AZURE_CREDENTIALS' or OIDC variables."
+            exit 1
+          fi
+
       - name: Auth method
         run: |
-          if [ -n "${{ secrets.AZURE_CREDENTIALS }}" ]; then
+          if [ "${{ steps.auth.outputs.use_sp }}" = "true" ]; then
             echo "Using: AZURE_CREDENTIALS (Service Principal secret)"
           else
             echo "Using: OIDC (AZURE_CLIENT_ID / AZURE_TENANT_ID / AZURE_SUBSCRIPTION_ID)"
@@ -50,13 +64,13 @@ jobs:
 
 
       - name: Azure Login (Service Principal)
-        if: ${{ secrets.AZURE_CREDENTIALS != '' }}
+        if: ${{ steps.auth.outputs.use_sp == 'true' }}
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Azure Login (OIDC)
-        if: ${{ secrets.AZURE_CREDENTIALS == '' && vars.AZURE_CLIENT_ID != '' }}
+        if: ${{ steps.auth.outputs.use_oidc == 'true' }}
         uses: azure/login@v2
         with:
           client-id: ${{ vars.AZURE_CLIENT_ID }}
