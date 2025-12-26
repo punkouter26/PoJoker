@@ -45,6 +45,7 @@ public sealed class AiJesterService : IAnalysisService
     }
 
     public async Task<JokeAnalysisDto> PredictPunchlineAsync(JokeDto joke, CancellationToken cancellationToken = default)
+
     {
         using var activity = OpenTelemetryConfig.ActivitySource.StartActivity("AI.PredictPunchline");
         activity?.SetTag("joke.id", joke.Id);
@@ -61,36 +62,33 @@ public sealed class AiJesterService : IAnalysisService
                 new SystemChatMessage(SystemPrompt),
                 new UserChatMessage($"Joke setup: \"{joke.Setup}\"")
             };
-
             var response = await chatClient.CompleteChatAsync(messages, cancellationToken: cancellationToken);
 
             // Check for content filter triggering
+
+            string aiPunchline;
             if (response.Value.FinishReason == ChatFinishReason.ContentFilter)
             {
-                _logger.LogWarning("Content filter triggered for joke {JokeId}", joke.Id);
-                throw SpeechlessJesterException.FromContentFilter(jokeId: joke.Id);
+                _logger.LogWarning("Content filter triggered for joke {JokeId}, returning fallback punchline.", joke.Id);
+                aiPunchline = "[The Jester shrugs and delivers a safe, court-approved punchline.]";
             }
-
-            var aiPunchline = response.Value.Content[0].Text.Trim();
-
+            else
+            {
+                aiPunchline = response.Value.Content[0].Text.Trim();
+            }
             stopwatch.Stop();
-
             var similarityScore = CalculateSimilarity(joke.Punchline, aiPunchline);
-            var isTriumph = similarityScore >= 0.55;
-
+            var isTriumph = similarityScore >= 0.55 && response.Value.FinishReason != ChatFinishReason.ContentFilter;
             OpenTelemetryConfig.JokesAnalyzed.Add(1,
                 new KeyValuePair<string, object?>("category", joke.Category),
                 new KeyValuePair<string, object?>("is_triumph", isTriumph));
-
             if (isTriumph)
             {
                 OpenTelemetryConfig.AiTriumphs.Add(1);
             }
-
             _logger.LogInformation(
                 "AI predicted punchline for joke {JokeId}: Similarity={Similarity:P1}, IsTriumph={IsTriumph}",
                 joke.Id, similarityScore, isTriumph);
-
             return new JokeAnalysisDto
             {
                 OriginalJoke = joke,
@@ -108,61 +106,7 @@ public sealed class AiJesterService : IAnalysisService
             activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
             throw;
         }
-    }
-
-    /// <summary>
-    /// Calculates semantic similarity between actual and predicted punchlines.
-    /// Uses fuzzy string matching (Levenshtein distance) combined with word overlap.
-    /// </summary>
-    private static double CalculateSimilarity(string actual, string predicted)
-    {
-        if (string.IsNullOrWhiteSpace(actual) || string.IsNullOrWhiteSpace(predicted))
-            return 0;
-
-        var actualLower = actual.ToLowerInvariant();
-        var predictedLower = predicted.ToLowerInvariant();
-
-        // Exact match
-        if (actualLower == predictedLower)
-            return 1.0;
-
-        // Fuzzy string matching using Levenshtein distance
-        var levenshteinSimilarity = LevenshteinSimilarity(actualLower, predictedLower);
-
-        // Word overlap (Jaccard similarity)
-        var actualWords = actualLower
-            .Split([' ', '.', '!', '?', ','], StringSplitOptions.RemoveEmptyEntries)
-            .ToHashSet();
-
-        var predictedWords = predictedLower
-            .Split([' ', '.', '!', '?', ','], StringSplitOptions.RemoveEmptyEntries)
-            .ToHashSet();
-
-        double jaccardSimilarity = 0;
-        if (actualWords.Count > 0 && predictedWords.Count > 0)
-        {
-            var intersection = actualWords.Intersect(predictedWords).Count();
-            var union = actualWords.Union(predictedWords).Count();
-            jaccardSimilarity = (double)intersection / union;
-        }
-
-        // Weighted average: prioritize fuzzy matching (semantic closeness) over word overlap
-        // Slightly favor word overlap to catch concept matches (e.g., "Tooth hurt!" vs "Tooth hurt-y.")
-        return (levenshteinSimilarity * 0.55) + (jaccardSimilarity * 0.45);
-    }
-
-    /// <summary>
-    /// Calculates Levenshtein distance-based similarity (0.0 to 1.0).
-    /// Measures how many character edits are needed to transform one string to another.
-    /// </summary>
-    private static double LevenshteinSimilarity(string s1, string s2)
-    {
-        int maxLength = Math.Max(s1.Length, s2.Length);
-        if (maxLength == 0)
-            return 1.0;
-
-        int distance = LevenshteinDistance(s1, s2);
-        return 1.0 - ((double)distance / maxLength);
+        throw new InvalidOperationException("Unreachable code in PredictPunchlineAsync");
     }
 
     /// <summary>
@@ -194,6 +138,48 @@ public sealed class AiJesterService : IAnalysisService
         return dp[s1.Length, s2.Length];
     }
 
+    private static double LevenshteinSimilarity(string s1, string s2)
+    {
+        int maxLength = Math.Max(s1.Length, s2.Length);
+        if (maxLength == 0)
+            return 1.0;
+
+        int distance = LevenshteinDistance(s1, s2);
+        return 1.0 - ((double)distance / maxLength);
+    }
+
+    private static double CalculateSimilarity(string actual, string predicted)
+    {
+        if (string.IsNullOrWhiteSpace(actual) || string.IsNullOrWhiteSpace(predicted))
+            return 0;
+
+        var actualLower = actual.ToLowerInvariant();
+        var predictedLower = predicted.ToLowerInvariant();
+
+        if (actualLower == predictedLower)
+            return 1.0;
+
+        var levenshteinSimilarity = LevenshteinSimilarity(actualLower, predictedLower);
+
+        var actualWords = actualLower
+            .Split(new[] { ' ', '.', '!', '?', ',' }, StringSplitOptions.RemoveEmptyEntries)
+            .ToHashSet();
+
+        var predictedWords = predictedLower
+            .Split(new[] { ' ', '.', '!', '?', ',' }, StringSplitOptions.RemoveEmptyEntries)
+            .ToHashSet();
+
+        double jaccardSimilarity = 0;
+        if (actualWords.Count > 0 && predictedWords.Count > 0)
+        {
+            var intersection = actualWords.Intersect(predictedWords).Count();
+            var union = actualWords.Union(predictedWords).Count();
+            jaccardSimilarity = (double)intersection / union;
+        }
+
+        return (levenshteinSimilarity * 0.55) + (jaccardSimilarity * 0.45);
+    }
+
     public async Task<JokeRatingDto> RateJokeAsync(JokeDto joke, CancellationToken cancellationToken = default)
     {
         using var activity = OpenTelemetryConfig.ActivitySource.StartActivity("AI.RateJoke");
@@ -223,8 +209,16 @@ public sealed class AiJesterService : IAnalysisService
         // Check for content filter triggering
         if (response.Value.FinishReason == ChatFinishReason.ContentFilter)
         {
-            _logger.LogWarning("Content filter triggered while rating joke {JokeId}", joke.Id);
-            throw SpeechlessJesterException.FromContentFilter(jokeId: joke.Id);
+            _logger.LogWarning("Content filter triggered while rating joke {JokeId}, returning neutral scores.", joke.Id);
+            // Return neutral/average scores if filtered
+            return new JokeRatingDto
+            {
+                Cleverness = 5,
+                Complexity = 5,
+                Difficulty = 5,
+                Rudeness = 1,
+                Commentary = "Rated by the Digital Jester's discerning wit. (Filtered)"
+            };
         }
 
         var responseText = response.Value.Content[0].Text;

@@ -8,6 +8,10 @@ infra:
   provider: bicep
   path: infra
   module: main
+  parameters:
+    baseName: pojoker
+    environment: dev
+    containerAppName: pojoker-dev-app
 
 services:
   joker:

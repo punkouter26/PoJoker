@@ -45,6 +45,11 @@
             </div>
         </div>
 
+        <div class="tts-health-section" style="margin-bottom:2rem;">
+            <h2>🗣️ Text-to-Speech Health Check</h2>
+            <span class="tts-result">TTS health check is only available in the client app.</span>
+        </div>
+
         <div class="services-section">
             <h2>🏰 Kingdom Services</h2>
             <div class="services-grid">
@@ -112,6 +117,7 @@
     private DiagnosticsDto? _diagnostics;
     private bool _isLoading = true;
     private string? _error;
+    // TTS health check is only available in the client app.
 
     protected override async Task OnInitializedAsync()
     {

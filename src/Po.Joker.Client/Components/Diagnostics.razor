@@ -1,0 +1,49 @@
+@page "/diagnostics"
+@inject Po.Joker.Client.Services.ISpeechService SpeechService
+
+<div class="diag-container">
+    <div class="diag-header">
+        <h1>🔧 Royal Court Diagnostics</h1>
+        <p class="diag-subtitle">Health status of the Jester's domain</p>
+    </div>
+
+    <div class="tts-health-section" style="margin-bottom:2rem;">
+        <h2>🗣️ Text-to-Speech Health Check</h2>
+        <button class="tts-test-btn" @onclick="TestTts" disabled="@_ttsTesting">Test TTS</button>
+        @if (_ttsResult is not null)
+        {
+            <span class="tts-result">@_ttsResult</span>
+        }
+    </div>
+</div>
+
+@code {
+    private bool _ttsTesting = false;
+    private string? _ttsResult;
+
+    private async Task TestTts()
+    {
+        _ttsTesting = true;
+        _ttsResult = null;
+        StateHasChanged();
+        try
+        {
+            var supported = await SpeechService.IsSupportedAsync();
+            if (!supported)
+            {
+                _ttsResult = "❌ TTS not supported in this browser.";
+            }
+            else
+            {
+                await SpeechService.SpeakAsync("Text to speech is working!", 1.0, 1.0);
+                _ttsResult = "✅ TTS is working!";
+            }
+        }
+        catch (Exception ex)
+        {
+            _ttsResult = $"❌ TTS failed: {ex.Message}";
+        }
+        _ttsTesting = false;
+        StateHasChanged();
+    }
+}
