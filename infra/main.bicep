@@ -30,8 +30,7 @@ param budgetAlertEmail string = 'punkouter26@gmail.com'
 @description('Container image to deploy')
 param containerImage string = 'mcr.microsoft.com/dotnet/samples:aspnetapp'
 
-@description('Deployment target: containerApp or appService')
-@allowed(['containerApp','appService'])
+// Deployment target is always containerApp
 param deploymentTarget string = 'containerApp'
 
 @description('Existing Key Vault name to grant access to the Container App or Web App')
@@ -45,8 +44,7 @@ var containerRegistryName = replace(toLower('${baseName}${environment}acr'), '-'
 var storageAccountName = replace(toLower('${baseName}${environment}st'), '-', '')
 var logAnalyticsName = '${resourcePrefix}-logs'
 var appInsightsName = '${resourcePrefix}-insights'
-var appServicePlanName = '${resourcePrefix}-plan'
-var webAppName = '${resourcePrefix}-webapp'
+
 
 // Tags applied to all resources
 var commonTags = {
@@ -256,63 +254,7 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
   }
 }
 
-// Optional App Service (Linux) resources - deployed when `deploymentTarget` == 'appService'
-resource appServicePlan 'Microsoft.Web/serverfarms@2022-03-01' = if (deploymentTarget == 'appService') {
-  name: appServicePlanName
-  location: location
-  tags: commonTags
-  sku: {
-    name: 'S1'
-    tier: 'Standard'
-    capacity: 1
-  }
-  kind: 'linux'
-  properties: {}
-}
 
-resource webApp 'Microsoft.Web/sites@2022-03-01' = if (deploymentTarget == 'appService') {
-  name: webAppName
-  location: location
-  tags: commonTags
-  identity: {
-    type: 'SystemAssigned'
-  }
-  properties: {
-    serverFarmId: appServicePlan.id
-    siteConfig: {
-      linuxFxVersion: 'DOCKER|${containerImage}'
-      appSettings: [
-        {
-          name: 'DOCKER_REGISTRY_SERVER_URL'
-          value: 'https://${containerRegistry.properties.loginServer}'
-        }
-        {
-          name: 'DOCKER_REGISTRY_SERVER_USERNAME'
-          value: containerRegistry.name
-        }
-        {
-          name: 'DOCKER_REGISTRY_SERVER_PASSWORD'
-          value: containerRegistry.listCredentials().passwords[0].value
-        }
-        {
-          name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
-          value: appInsights.outputs.connectionString
-        }
-        {
-          name: 'ASPNETCORE_ENVIRONMENT'
-          value: environment == 'prod' ? 'Production' : 'Development'
-        }
-        {
-          name: 'Azure__StorageAccountName'
-          value: storageAccount.outputs.name
-        }
-      ]
-      alwaysOn: true
-      use32BitWorkerProcess: false
-    }
-    httpsOnly: true
-  }
-}
 
 // Role assignment for Container App to access Storage Account (when using Container Apps)
 var storageRoleAssignmentName = guid(resourceGroup().id, storageAccountName, containerAppName, 'Storage Blob Data Contributor')
@@ -326,17 +268,7 @@ resource storageRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-
   }
 }
 
-// Role assignment for App Service to access Storage Account (when using App Service)
-var storageRoleAssignmentNameAppSvc = guid(resourceGroup().id, storageAccountName, webAppName, 'Storage Blob Data Contributor')
-resource storageRoleAssignmentAppService 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (deploymentTarget == 'appService') {
-  name: storageRoleAssignmentNameAppSvc
-  scope: resourceGroup()
-  properties: {
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'ba92f5b4-2d11-453d-a403-e96b0029c9fe') // Storage Blob Data Contributor
-    principalId: webApp.identity.principalId
-    principalType: 'ServicePrincipal'
-  }
-}
+
 
 // Role assignment for Container App to access Storage Tables
 var tableRoleAssignmentName = guid(resourceGroup().id, storageAccountName, containerAppName, 'Storage Table Data Contributor')
@@ -350,17 +282,7 @@ resource tableRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01
   }
 }
 
-// Role assignment for App Service to access Storage Tables
-var tableRoleAssignmentNameAppSvc = guid(resourceGroup().id, storageAccountName, webAppName, 'Storage Table Data Contributor')
-resource tableRoleAssignmentAppService 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (deploymentTarget == 'appService') {
-  name: tableRoleAssignmentNameAppSvc
-  scope: resourceGroup()
-  properties: {
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '0a9a7e1f-b9d0-4cc4-a60d-0319b160aaa3') // Storage Table Data Contributor
-    principalId: webApp.identity.principalId
-    principalType: 'ServicePrincipal'
-  }
-}
+
 
 // Key Vault role assignment - grant Container App or App Service access to read secrets from Key Vault
 resource keyVault 'Microsoft.KeyVault/vaults@2021-10-01' existing = {
@@ -381,19 +303,7 @@ resource keyVaultRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04
   }
 }
 
-var keyVaultRoleAssignmentNameAppSvc = guid(resourceGroup().id, keyVault.name, webAppName, 'KeyVaultSecretsUser')
-resource keyVaultRoleAssignmentAppService 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (deploymentTarget == 'appService') {
-  name: keyVaultRoleAssignmentNameAppSvc
-  scope: keyVault
-  dependsOn: [
-    webApp
-  ]
-  properties: {
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '4633458b-17de-408a-b874-0445c86b69e6') // Key Vault Secrets User
-    principalId: webApp.identity.principalId
-    principalType: 'ServicePrincipal'
-  }
-}
+
 
 // Budget for cost management
 module budget './modules/budget.bicep' = {
@@ -410,8 +320,7 @@ module budget './modules/budget.bicep' = {
 output containerAppName string = containerApp.name
 output containerAppFqdn string = containerApp.properties.configuration.ingress.fqdn
 output containerAppUrl string = 'https://${containerApp.properties.configuration.ingress.fqdn}'
-output webAppName string = deploymentTarget == 'appService' ? webApp.name : ''
-output webAppUrl string = deploymentTarget == 'appService' ? 'https://${webApp.properties.defaultHostName}' : ''
+
 output containerRegistryName string = containerRegistry.name
 output containerRegistryLoginServer string = containerRegistry.properties.loginServer
 @secure()
