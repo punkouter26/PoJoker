@@ -43,7 +43,21 @@ jobs:
           echo "Determining auth method..."
           # Prefer OIDC-based login when repository variables are present (more secure).
           if [ -n "${{ vars.AZURE_CLIENT_ID }}" ] && [ -n "${{ vars.AZURE_TENANT_ID }}" ] && [ -n "${{ vars.AZURE_SUBSCRIPTION_ID }}" ]; then
-            echo "use_oidc=true" >> $GITHUB_OUTPUT
+            echo "Checking if app has a role assignment on the subscription..."
+            ASSIGNMENTS=$(az role assignment list --assignee "${{ vars.AZURE_CLIENT_ID }}" --scope "/subscriptions/${{ vars.AZURE_SUBSCRIPTION_ID }}" --query "length([])" -o tsv 2>/dev/null || true)
+            if [ "$ASSIGNMENTS" != "0" ] && [ -n "$ASSIGNMENTS" ]; then
+              echo "use_oidc=true" >> $GITHUB_OUTPUT
+            else
+              echo "No role assignment found for app ${AZURE_CLIENT_ID} on subscription ${AZURE_SUBSCRIPTION_ID}."
+              if [ -n "${{ secrets.AZURE_CREDENTIALS }}" ]; then
+                echo "Falling back to Service Principal secret (AZURE_CREDENTIALS)";
+                echo "use_sp=true" >> $GITHUB_OUTPUT
+              else
+                echo "no_creds=true" >> $GITHUB_OUTPUT
+                echo "Missing Azure credentials or role assignment. Create role assignment or add AZURE_CREDENTIALS secret."
+                exit 1
+              fi
+            fi
           elif [ -n "${{ secrets.AZURE_CREDENTIALS }}" ]; then
             echo "use_sp=true" >> $GITHUB_OUTPUT
           else
