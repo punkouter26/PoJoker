@@ -34,6 +34,7 @@ jobs:
       - name: Build & Test
         env:
           POJOKER_DISABLE_KEYVAULT: "true"
+          POJOKER_USE_MOCK_AI: "true"
         run: |
           dotnet restore
           dotnet build --no-restore
