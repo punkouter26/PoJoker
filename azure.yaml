@@ -22,5 +22,13 @@ services:
       path: ./Dockerfile
       context: .
 
+  joker-appservice:
+    project: ./src/Po.Joker
+    language: dotnet
+    host: appService
+    docker:
+      path: ./Dockerfile
+      context: .
+
 pipeline:
   provider: github
