@@ -80,7 +80,13 @@ jobs:
       - name: Verify Azure login
         run: |
           az account show
-          azd --version
+          if azd version >/dev/null 2>&1; then
+            azd version
+          elif azd --version >/dev/null 2>&1; then
+            azd --version
+          else
+            echo "azd version command not available"
+          fi
 
       - name: Deploy to Azure Container Apps
         run: azd up --no-prompt
