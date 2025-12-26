@@ -89,6 +89,9 @@ app.UseAntiforgery();
 // Map health check endpoint
 app.MapHealthChecks("/health");
 
+// Lightweight readiness endpoint for platform probes
+app.MapGet("/healthz", () => Results.Ok("OK"));
+
 // Map API endpoints
 app.MapJokesEndpoints();
 app.MapAnalysisEndpoints();
