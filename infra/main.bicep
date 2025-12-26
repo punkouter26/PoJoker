@@ -211,7 +211,7 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
             }
             {
               name: 'ASPNETCORE_ENVIRONMENT'
-              value: environment == 'prod' ? 'Production' : 'Development'
+              value: 'Production'  // Always Production when deployed to Azure (dev/staging/prod are Azure environments, not ASP.NET environments)
             }
             {
               name: 'Azure__StorageAccountName'
