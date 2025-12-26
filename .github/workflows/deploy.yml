@@ -77,6 +77,28 @@ jobs:
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
+      - name: Set subscription (from AZURE_CREDENTIALS)
+        if: ${{ steps.auth.outputs.use_sp == 'true' }}
+        run: |
+          echo "Configuring subscription from AZURE_CREDENTIALS (if present)..."
+          # parse subscriptionId from the AZURE_CREDENTIALS JSON secret without printing the secret
+          SUBS_ID=$(python - <<'PY'
+import os, json
+creds = os.environ.get('AZURE_CREDENTIALS', '')
+if creds:
+    try:
+        print(json.loads(creds)['subscriptionId'])
+    except Exception:
+        pass
+PY
+)
+          if [ -n "$SUBS_ID" ]; then
+            echo "Setting subscription: $SUBS_ID"
+            az account set -s "$SUBS_ID" || az account set --subscription "$SUBS_ID"
+          else
+            echo "No subscription ID found in AZURE_CREDENTIALS; skipping explicit set"
+          fi
+
       - name: Verify Azure login
         run: |
           az account show
