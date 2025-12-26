@@ -118,7 +118,7 @@ PoJoker/
 
 ### Using GitHub Actions (Recommended)
 
-1. **Configure OIDC authentication**
+1. **Configure OIDC authentication (recommended)**
    - Create an Azure AD App Registration
    - Add Federated Credentials for your GitHub repository
    - Set repository secrets:
@@ -127,7 +127,27 @@ PoJoker/
      - `AZURE_SUBSCRIPTION_ID`
      - `OPENAI_API_KEY`
 
-2. **Deploy via workflow**
+2. **(Alternative) Use a Service Principal secret**
+   - Create a Service Principal and a client secret in Azure AD.
+   - Add a repository secret named `AZURE_CREDENTIALS` with a JSON value like:
+
+```json
+{
+  "clientSecret":"<client-secret>",
+  "subscriptionId":"<subscription-id>",
+  "tenantId":"<tenant-id>",
+  "clientId":"<client-id>"
+}
+```
+
+   - The workflow should use the `azure/login@v2` action with:
+
+```yaml
+with:
+  creds: ${{ secrets.AZURE_CREDENTIALS }}
+```
+
+3. **Deploy via workflow**
    - Push to `main` branch for automatic deployment
    - Use manual workflow dispatch for specific environments
 
