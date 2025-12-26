@@ -21,6 +21,13 @@ public static class AzureServicesConfiguration
         this IConfigurationBuilder configuration,
         IHostEnvironment environment)
     {
+        // Allow disabling Key Vault via env var for local runs and troubleshooting
+        var disableKeyVault = Environment.GetEnvironmentVariable("POJOKER_DISABLE_KEYVAULT");
+        if (!string.IsNullOrEmpty(disableKeyVault) && disableKeyVault.Equals("true", StringComparison.OrdinalIgnoreCase))
+        {
+            return configuration;
+        }
+
         var config = configuration.Build();
         var keyVaultUri = config["Azure:KeyVaultUri"] ?? "https://pojoker-kv.vault.azure.net/";
 
