@@ -134,7 +134,7 @@ azd provision
 
 This creates:
 - Resource Group: `PoJoker-rg`
-- App Service (Linux, F1/B1 tier)
+- Azure Container Apps (Linux)
 - Storage Account (Table Storage)
 - Azure AI Foundry (Hub + Project with gpt-35-turbo)
 - Application Insights + Log Analytics

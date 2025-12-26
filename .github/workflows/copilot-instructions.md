@@ -27,7 +27,7 @@ State Management: Use standard Component Parameters for parent-child flow. Use a
 Dev Proxy: In development, let the AppHost proxy traffic to the Blazor dev server to preserve hot-reload functionality.
 5. Secret & Configuration Management
 Zero-Trust Config: Use the Azure Key Vault Configuration Provider. Secrets are fetched at runtime via Managed Identity.
-No Hardcoded References: Remove @Microsoft.KeyVault(...) from App Service/ACA settings. Secrets should be transparent to the environment variables, managed via the DefaultAzureCredential in code.
+No Hardcoded References: Remove @Microsoft.KeyVault(...) from Container Apps/ACA settings. Secrets should be transparent to the environment variables, managed via the DefaultAzureCredential in code.
 Local Secrets: Use user-secrets locally and Aspire .RunAsEmulator() for storage.
 6. Resilience & Observability
 Native Resilience: Apply .AddStandardResilienceHandler() (Polly) to all HttpClient and Storage client configurations in ServiceDefaults.

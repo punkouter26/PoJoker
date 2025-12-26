@@ -54,18 +54,13 @@ var commonTags = {
 }
 
 // Log Analytics Workspace
-resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
-  name: logAnalyticsName
-  location: location
-  tags: commonTags
-  properties: {
-    sku: {
-      name: 'PerGB2018'
-    }
+module logAnalytics 'modules/logAnalytics.bicep' = {
+  name: 'logAnalytics'
+  params: {
+    name: logAnalyticsName
+    location: location
+    tags: commonTags
     retentionInDays: 30
-    features: {
-      enableLogAccessUsingOnlyResourcePermissions: true
-    }
   }
 }
 
@@ -75,7 +70,7 @@ module appInsights 'br/public:avm/res/insights/component:0.6.0' = {
   params: {
     name: appInsightsName
     location: location
-    workspaceResourceId: logAnalytics.id
+    workspaceResourceId: logAnalytics.outputs.id
     applicationType: 'web'
     tags: commonTags
     disableIpMasking: false
@@ -143,114 +138,35 @@ resource openAi 'Microsoft.CognitiveServices/accounts@2024-10-01-preview' existi
 }
 
 // Container App Environment
-resource containerAppEnvironment 'Microsoft.App/managedEnvironments@2024-03-01' = {
-  name: containerAppEnvName
-  location: location
-  tags: commonTags
-  properties: {
-    appLogsConfiguration: {
-      destination: 'log-analytics'
-      logAnalyticsConfiguration: {
-        customerId: logAnalytics.properties.customerId
-        sharedKey: logAnalytics.listKeys().primarySharedKey
-      }
-    }
+module managedEnv 'modules/managedEnvironment.bicep' = {
+  name: 'managedEnv'
+  params: {
+    name: containerAppEnvName
+    location: location
+    tags: commonTags
+    logAnalyticsCustomerId: logAnalytics.outputs.customerId
+    logAnalyticsSharedKey: logAnalytics.outputs.sharedKey
   }
 }
 
-// Container App
-resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
-  name: containerAppName
-  location: location
-  tags: union(commonTags, {
-    'azd-service-name': 'joker'
-  })
-  identity: {
-    type: 'SystemAssigned'
-  }
-  properties: {
-    managedEnvironmentId: containerAppEnvironment.id
-    configuration: {
-      ingress: {
-        external: true
-        targetPort: 8080
-        transport: 'auto'
-        allowInsecure: false
-      }
-      registries: [
-        {
-          server: containerRegistry.properties.loginServer
-          username: containerRegistry.name
-          passwordSecretRef: 'registry-password'
-        }
-      ]
-      secrets: [
-        {
-          name: 'registry-password'
-          value: containerRegistry.listCredentials().passwords[0].value
-        }
-        {
-          name: 'appinsights-connection-string'
-          value: appInsights.outputs.connectionString
-        }
-      ]
-    }
-    template: {
-      containers: [
-        {
-          name: 'pojoker'
-          image: containerImage
-          resources: {
-            cpu: json('0.5')
-            memory: '1Gi'
-          }
-          env: [
-            {
-              name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
-              secretRef: 'appinsights-connection-string'
-            }
-            {
-              name: 'ASPNETCORE_ENVIRONMENT'
-              value: 'Production'  // Always Production when deployed to Azure (dev/staging/prod are Azure environments, not ASP.NET environments)
-            }
-            {
-              name: 'Azure__StorageAccountName'
-              value: storageAccount.outputs.name
-            }
-            {
-              name: 'Azure__OpenAI__Endpoint'
-              value: openAiEndpoint
-            }
-            {
-              name: 'Azure__OpenAI__DeploymentName'
-              value: openAiDeploymentName
-            }
-            {
-              name: 'JokeSettings__CacheEnabled'
-              value: 'true'
-            }
-            {
-              name: 'JokeSettings__RateLimitPerMinute'
-              value: '60'
-            }
-          ]
-        }
-      ]
-      scale: {
-        minReplicas: 1
-        maxReplicas: 3
-        rules: [
-          {
-            name: 'http-scaling'
-            http: {
-              metadata: {
-                concurrentRequests: '100'
-              }
-            }
-          }
-        ]
-      }
-    }
+// Container App (module)
+module containerApp 'modules/containerApp.bicep' = {
+  name: 'containerApp'
+  params: {
+    name: containerAppName
+    location: location
+    tags: union(commonTags, {
+      'azd-service-name': 'joker'
+    })
+    managedEnvironmentId: managedEnv.outputs.id
+    containerImage: containerImage
+    containerRegistryServer: containerRegistry.properties.loginServer
+    containerRegistryName: containerRegistry.name
+    registryPassword: containerRegistry.listCredentials().passwords[0].value
+    appInsightsConnectionString: appInsights.outputs.connectionString
+    storageAccountName: storageAccount.outputs.name
+    openAiEndpoint: openAiEndpoint
+    openAiDeploymentName: openAiDeploymentName
   }
 }
 
@@ -263,7 +179,7 @@ resource storageRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-
   scope: resourceGroup()
   properties: {
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'ba92f5b4-2d11-453d-a403-e96b0029c9fe') // Storage Blob Data Contributor
-    principalId: containerApp.identity.principalId
+    principalId: containerApp.outputs.principalId
     principalType: 'ServicePrincipal'
   }
 }
@@ -277,7 +193,7 @@ resource tableRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01
   scope: resourceGroup()
   properties: {
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '0a9a7e1f-b9d0-4cc4-a60d-0319b160aaa3') // Storage Table Data Contributor
-    principalId: containerApp.identity.principalId
+    principalId: containerApp.outputs.principalId
     principalType: 'ServicePrincipal'
   }
 }
@@ -298,7 +214,7 @@ resource keyVaultRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04
   ]
   properties: {
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '4633458b-17de-408a-b874-0445c86b69e6') // Key Vault Secrets User
-    principalId: containerApp.identity.principalId
+    principalId: containerApp.outputs.principalId
     principalType: 'ServicePrincipal'
   }
 }
@@ -317,9 +233,9 @@ module budget './modules/budget.bicep' = {
 }
 
 // Outputs
-output containerAppName string = containerApp.name
-output containerAppFqdn string = containerApp.properties.configuration.ingress.fqdn
-output containerAppUrl string = 'https://${containerApp.properties.configuration.ingress.fqdn}'
+output containerAppName string = containerApp.outputs.name
+output containerAppFqdn string = containerApp.outputs.fqdn
+output containerAppUrl string = 'https://${containerApp.outputs.fqdn}'
 
 output containerRegistryName string = containerRegistry.name
 output containerRegistryLoginServer string = containerRegistry.properties.loginServer

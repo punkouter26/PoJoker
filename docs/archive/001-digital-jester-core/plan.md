@@ -16,7 +16,7 @@ Build a passive, autonomous comedy application where an AI Jester fetches jokes 
 **External APIs**: JokeAPI (https://v2.jokeapi.dev/) for two-part jokes with category filtering  
 **Audio**: Web Speech API (TTS), Web Audio API (AudioContext for programmatic drum roll/trombone)  
 **Testing**: xUnit (Unit/Integration), bUnit (Components), Playwright (E2E on Chromium)  
-**Target Platform**: Azure App Service (Linux, F1/B1 tier), Web (Chromium mobile/desktop)  
+**Target Platform**: Azure Container Apps (Linux), Web (Chromium mobile/desktop)  
 **Project Type**: web (Server + Client projects per Blazor Web App template)  
 **Performance Goals**: Unit tests < 20ms, joke cycle < 60s, AI timeout 15s, API p95 < 200ms  
 **Constraints**: 80% code coverage, mobile-first responsive, $5/month Azure budget, no authentication  

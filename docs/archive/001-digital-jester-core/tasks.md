@@ -323,8 +323,8 @@
 
 ### Azure Infrastructure (Bicep + azd)
 
-- [X] T108 Create infra/main.bicep with App Service (Linux F1/B1), Storage Account, App Insights, Log Analytics workspace in infra/main.bicep
-- [X] T109 [P] Create infra/modules/appservice.bicep for App Service module in infra/modules/appservice.bicep (consolidated in main.bicep using AVM modules)
+- [X] T108 Create infra/main.bicep with Azure Container Apps, Storage Account, App Insights, Log Analytics workspace in infra/main.bicep
+- [X] T109 [P] Create infra/modules/containerapp.bicep for Container App module in infra/modules/containerapp.bicep (consolidated in main.bicep using AVM modules)
 - [X] T110 [P] Create infra/modules/storage.bicep for Storage Account with Table endpoint in infra/modules/storage.bicep (consolidated in main.bicep using AVM modules)
 - [X] T111 [P] Create infra/modules/ai-foundry.bicep for Azure OpenAI resource in infra/modules/ai-foundry.bicep (optional - uses openAiApiKey parameter)
 - [X] T112 [P] Create infra/modules/appinsights.bicep for Application Insights in infra/modules/appinsights.bicep (consolidated in main.bicep using AVM modules)
@@ -335,7 +335,7 @@
 ### CI/CD (GitHub Actions)
 
 - [X] T116 Create .github/workflows/deploy.yml with OIDC authentication in .github/workflows/deploy.yml
-- [X] T117 Configure build, test, and deploy stages to PoJoker-rg App Service in .github/workflows/deploy.yml
+- [X] T117 Configure build, test, and deploy stages to PoJoker-rg Azure Container Apps in .github/workflows/deploy.yml
 - [ ] T118 Setup Federated Credentials for secret-less Azure connection in Azure Portal / Bicep
 
 ### Documentation & Monitoring
