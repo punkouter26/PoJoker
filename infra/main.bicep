@@ -408,8 +408,8 @@ module budget './modules/budget.bicep' = {
 output containerAppName string = containerApp.name
 output containerAppFqdn string = containerApp.properties.configuration.ingress.fqdn
 output containerAppUrl string = 'https://${containerApp.properties.configuration.ingress.fqdn}'
-output webAppName string = if (deploymentTarget == 'appService') webApp.name
-output webAppUrl string = if (deploymentTarget == 'appService') 'https://${webApp.properties.defaultHostName}'
+output webAppName string = deploymentTarget == 'appService' ? webApp.name : ''
+output webAppUrl string = deploymentTarget == 'appService' ? 'https://${webApp.properties.defaultHostName}' : ''
 output containerRegistryName string = containerRegistry.name
 output containerRegistryLoginServer string = containerRegistry.properties.loginServer
 @secure()
