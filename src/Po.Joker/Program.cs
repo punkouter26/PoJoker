@@ -27,8 +27,19 @@ builder.Services.AddPoJokerBlazor();
 builder.Services.AddPoJokerMediatR();
 builder.Services.AddPoJokerTelemetry(builder.Configuration, builder.Environment);
 
-// Add Aspire Azure Table Storage (connection managed by Aspire AppHost)
-builder.AddAzureTableClient("tables");
+// Add Azure Table Storage configuration
+// Prefer explicit configuration using the storage account name (Managed Identity in Azure).
+if (!string.IsNullOrEmpty(builder.Configuration["Azure:StorageAccountName"]))
+{
+    // Configure TableServiceClient using managed identity and the storage account name.
+    builder.Services.AddPoJokerStorageLegacy(builder.Configuration, builder.Environment);
+}
+else
+{
+    // Fall back to Aspire-provided table client (e.g. local / AppHost scenarios)
+    builder.AddAzureTableClient("tables");
+}
+
 builder.Services.AddPoJokerTableStorage();
 builder.Services.AddScoped<IJokeStorageClient, JokeStorageClient>();
 
