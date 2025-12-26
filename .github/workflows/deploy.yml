@@ -100,6 +100,21 @@ PY
             echo "No subscription ID found in AZURE_CREDENTIALS; skipping explicit set"
           fi
 
+      - name: Post-login debug (always)
+        if: always()
+        run: |
+          echo "--- DEBUG: env checks ---"
+          echo "USE_OIDC=${{ steps.auth.outputs.use_oidc }}"
+          echo "USE_SP=${{ steps.auth.outputs.use_sp }}"
+          echo "AZURE_CLIENT_ID set?"; if [ -n "${{ vars.AZURE_CLIENT_ID }}" ]; then echo yes; else echo no; fi
+          echo "AZURE_TENANT_ID set?"; if [ -n "${{ vars.AZURE_TENANT_ID }}" ]; then echo yes; else echo no; fi
+          echo "AZURE_SUBSCRIPTION_ID set?"; if [ -n "${{ vars.AZURE_SUBSCRIPTION_ID }}" ]; then echo yes; else echo no; fi
+          echo "--- DEBUG: az info ---"
+          az --version || true
+          echo "Listing subscriptions (may be empty):"; az account list -o table || true
+          echo "Attempt az account show (may error):"; az account show || true
+          echo "Attempt to get access token for subscription:"; az account get-access-token --subscription "${{ vars.AZURE_SUBSCRIPTION_ID }}" || az account get-access-token || true
+
       - name: Verify Azure login
         run: |
           az account show
