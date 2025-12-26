@@ -154,27 +154,23 @@ with:
    - Push to `main` branch for automatic deployment
    - Use manual workflow dispatch for specific environments
 
-### Manual Deployment
+### Manual Deployment with Azure Developer CLI (azd)
 
 ```bash
 # Login to Azure
-az login
+azd auth login
 
-# Create resource group
-az group create --name rg-pojoker-dev --location eastus2
+# Initialize environment (first time only)
+azd init
 
-# Deploy infrastructure
-az deployment group create \
-  --resource-group rg-pojoker-dev \
-  --template-file infra/main.bicep \
-  --parameters environment=dev
-
-# Publish and deploy app
-dotnet publish src/Po.Joker -c Release -o ./publish
-az webapp deploy --resource-group rg-pojoker-dev \
-   --name PoJoker \
-  --src-path ./publish
+# Provision infrastructure and deploy to Azure Container Apps
+azd up
 ```
+
+This will:
+- Create Azure Container Registry, Container App Environment, and Container App
+- Build and push the Docker image
+- Deploy the application to Azure Container Apps
 
 ## 📊 Monitoring
 

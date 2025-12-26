@@ -3,7 +3,7 @@
 1. Project Identity & SDK Standards
 Unified ID Strategy: Use the Solution name (e.g., PoAppName) as the master identifier for Azure Resource Groups and ACA environments. Use the short prefix (PoApp) for project namespaces.
 Modern SDK Standards: Target .NET 10 and C# 14 exclusively. Enforce Central Package Management (CPM) via Directory.Packages.props with CentralPackageTransitivePinning enabled.
-Use context7 mcp to get latest version of .NET 10
+Use context7 MCP (@upstash/context7-mcp) to query latest versions of .NET packages and dependencies. Context7 provides real-time package information for NuGet, npm, and other package managers.
 AOT-First Syntax: * Enable <IsAotCompatible>true</IsAotCompatible> and <TreatWarningsAsErrors>true</TreatWarningsAsErrors>.
 Use Primary Constructors, Collection Expressions, and the field keyword.
 Use Extension Blocks (extension keyword) for domain logic.

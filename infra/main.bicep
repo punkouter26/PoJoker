@@ -284,7 +284,7 @@ resource tableRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01
 
 
 
-// Key Vault role assignment - grant Container App or App Service access to read secrets from Key Vault
+// Key Vault role assignment - grant Container App access to read secrets from Key Vault
 resource keyVault 'Microsoft.KeyVault/vaults@2021-10-01' existing = {
   name: keyVaultName
 }
