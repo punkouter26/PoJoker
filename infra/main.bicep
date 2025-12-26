@@ -144,9 +144,14 @@ module managedEnv 'modules/managedEnvironment.bicep' = {
     name: containerAppEnvName
     location: location
     tags: commonTags
-    logAnalyticsCustomerId: logAnalytics.outputs.customerId
-    logAnalyticsSharedKey: logAnalytics.outputs.sharedKey
+    logAnalyticsCustomerId: logAnalyticsRef.properties.customerId
+    logAnalyticsSharedKey: logAnalyticsRef.listKeys().primarySharedKey
   }
+}
+
+// Existing reference to Log Analytics workspace to allow listKeys() and direct properties access
+resource logAnalyticsRef 'Microsoft.OperationalInsights/workspaces@2023-09-01' existing = {
+  name: logAnalyticsName
 }
 
 // Container App (module)
@@ -245,5 +250,5 @@ output appInsightsConnectionString string = appInsights.outputs.connectionString
 output appInsightsInstrumentationKey string = appInsights.outputs.instrumentationKey
 output storageAccountName string = storageAccount.outputs.name
 output storageAccountResourceId string = storageAccount.outputs.resourceId
-output logAnalyticsWorkspaceId string = logAnalytics.id
+output logAnalyticsWorkspaceId string = logAnalytics.outputs.id
 output budgetName string = budget.outputs.budgetName

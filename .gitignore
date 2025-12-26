@@ -139,3 +139,14 @@ ApplicationInsights.config
 
 # azd agent logs
 azd-agent-*.log
+
+# Local credential and temporary files
+federated-credential*.json
+tmp_sp.json
+tmp_*.json
+federated-credential-lower.json
+nul
+
+# Local tooling/config
+.claude/
+

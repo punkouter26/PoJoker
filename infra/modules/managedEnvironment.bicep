@@ -3,6 +3,7 @@ param name string
 param location string = resourceGroup().location
 param tags object = {}
 param logAnalyticsCustomerId string
+@secure()
 param logAnalyticsSharedKey string
 
 resource containerAppEnvironment 'Microsoft.App/managedEnvironments@2024-03-01' = {

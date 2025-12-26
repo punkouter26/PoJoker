@@ -6,7 +6,9 @@ param managedEnvironmentId string
 param containerImage string
 param containerRegistryServer string
 param containerRegistryName string
+@secure()
 param registryPassword string
+@secure()
 param appInsightsConnectionString string
 param storageAccountName string
 param openAiEndpoint string
@@ -109,4 +111,3 @@ output id string = containerApp.id
 output name string = containerApp.name
 output fqdn string = containerApp.properties.configuration.ingress.fqdn
 output principalId string = containerApp.identity.principalId
-output resource containerAppResource = containerApp
