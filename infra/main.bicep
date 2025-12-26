@@ -262,8 +262,8 @@ resource appServicePlan 'Microsoft.Web/serverfarms@2022-03-01' = if (deploymentT
   location: location
   tags: commonTags
   sku: {
-    name: 'P1v2'
-    tier: 'PremiumV2'
+    name: 'S1'
+    tier: 'Standard'
     capacity: 1
   }
   kind: 'linux'
