@@ -41,13 +41,14 @@ jobs:
         id: auth
         run: |
           echo "Determining auth method..."
-          if [ -n "${{ secrets.AZURE_CREDENTIALS }}" ]; then
-            echo "use_sp=true" >> $GITHUB_OUTPUT
-          elif [ -n "${{ vars.AZURE_CLIENT_ID }}" ] && [ -n "${{ vars.AZURE_TENANT_ID }}" ] && [ -n "${{ vars.AZURE_SUBSCRIPTION_ID }}" ]; then
+          # Prefer OIDC-based login when repository variables are present (more secure).
+          if [ -n "${{ vars.AZURE_CLIENT_ID }}" ] && [ -n "${{ vars.AZURE_TENANT_ID }}" ] && [ -n "${{ vars.AZURE_SUBSCRIPTION_ID }}" ]; then
             echo "use_oidc=true" >> $GITHUB_OUTPUT
+          elif [ -n "${{ secrets.AZURE_CREDENTIALS }}" ]; then
+            echo "use_sp=true" >> $GITHUB_OUTPUT
           else
             echo "no_creds=true" >> $GITHUB_OUTPUT
-            echo "Missing Azure credentials. Set either 'AZURE_CREDENTIALS' or OIDC variables."
+            echo "Missing Azure credentials. Set either repository variables 'AZURE_CLIENT_ID'/'AZURE_TENANT_ID'/'AZURE_SUBSCRIPTION_ID' for OIDC or secret 'AZURE_CREDENTIALS' for SP login."
             exit 1
           fi
 
