@@ -56,5 +56,8 @@ jobs:
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
+      - name: Authenticate azd
+        run: azd auth login --client-id ${{ vars.AZURE_CLIENT_ID }} --federated-credential-provider github --tenant-id ${{ vars.AZURE_TENANT_ID }}
+
       - name: Deploy to Azure Container Apps
         run: azd up --no-prompt
