@@ -58,17 +58,22 @@ public class PoJokerWebApplicationFactory : WebApplicationFactory<Program>
             services.RemoveAll<IJokeApiClient>();
             services.AddSingleton<IJokeApiClient, MockJokeApiClient>();
 
-            // Replace TableServiceClient with Azurite-backed instance for tests
-            var tableServiceDescriptor = services.SingleOrDefault(
-                d => d.ServiceType == typeof(TableServiceClient));
-            if (tableServiceDescriptor != null)
-            {
-                services.Remove(tableServiceDescriptor);
-            }
+            // Replace TableServiceClient and TableClient with Azurite-backed instances for tests
+            services.RemoveAll<TableServiceClient>();
+            services.RemoveAll<TableClient>();
 
             // Add TableServiceClient pointing to Azurite
             services.AddSingleton<TableServiceClient>(_ => 
                 new TableServiceClient(AzuriteConnectionString));
+
+            // Add TableClient and ensure table exists synchronously to avoid race conditions
+            services.AddSingleton<TableClient>(sp =>
+            {
+                var tableServiceClient = sp.GetRequiredService<TableServiceClient>();
+                var tableClient = tableServiceClient.GetTableClient("jokeperformances");
+                tableClient.CreateIfNotExists();
+                return tableClient;
+            });
         });
     }
 }
