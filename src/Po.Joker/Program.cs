@@ -12,9 +12,6 @@ using System.Linq;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add Aspire ServiceDefaults (telemetry, health checks, resilience, service discovery)
-builder.AddServiceDefaults();
-
 // Configure Azure Key Vault for both local and deployed environments
 builder.Configuration.AddPoJokerKeyVault(builder.Environment);
 
@@ -29,25 +26,15 @@ builder.Services.AddPoJokerBlazor();
 builder.Services.AddPoJokerMediatR();
 builder.Services.AddPoJokerTelemetry(builder.Configuration, builder.Environment);
 
-// Add Azure Table Storage configuration
-// Prefer explicit configuration using the storage account name (Managed Identity in Azure).
-if (!string.IsNullOrEmpty(builder.Configuration["Azure:StorageAccountName"]))
-{
-    // Configure TableServiceClient using managed identity and the storage account name.
-    builder.Services.AddPoJokerStorageLegacy(builder.Configuration, builder.Environment);
-}
-else
-{
-    // Fall back to Aspire-provided table client (e.g. local / AppHost scenarios)
-    builder.AddAzureTableClient("tables");
-}
-
-builder.Services.AddPoJokerTableStorage();
+// Add Azure Table Storage (uses Azurite locally, Managed Identity in production)
+builder.Services.AddPoJokerStorage(builder.Configuration, builder.Environment);
 builder.Services.AddScoped<IJokeStorageClient, JokeStorageClient>();
 
 builder.Services.AddPoJokerHttpClients();
 // Configure Azure OpenAI or use mock implementation to avoid external calls during local/E2E runs
-if (!string.Equals(Environment.GetEnvironmentVariable("POJOKER_USE_MOCK_AI"), "true", StringComparison.OrdinalIgnoreCase))
+var useMockAi = string.Equals(Environment.GetEnvironmentVariable("POJOKER_USE_MOCK_AI"), "true", StringComparison.OrdinalIgnoreCase)
+    || string.Equals(builder.Configuration["POJOKER_USE_MOCK_AI"], "true", StringComparison.OrdinalIgnoreCase);
+if (!useMockAi)
 {
     builder.Services.AddPoJokerAzureOpenAI(builder.Configuration, builder.Environment);
 }
@@ -84,7 +71,7 @@ else
     app.UseHsts();
 }
 
-app.UsePoJokerSwagger(app.Environment);
+app.UsePoJokerOpenApi();
 
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseHttpsRedirection();

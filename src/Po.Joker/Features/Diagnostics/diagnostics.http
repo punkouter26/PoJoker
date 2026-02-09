@@ -1,8 +1,13 @@
-@baseUrl = https://localhost:7200
+@baseUrl = https://localhost:5001
 
 ### Get Diagnostics
 # Returns system health status and metrics
 GET {{baseUrl}}/api/diagnostics
+Accept: application/json
+
+### Get Diag Config (masked secrets)
+# Returns all configuration values with masked secrets for debugging
+GET {{baseUrl}}/api/diag
 Accept: application/json
 
 ### Get Health Check (standard .NET health endpoint)

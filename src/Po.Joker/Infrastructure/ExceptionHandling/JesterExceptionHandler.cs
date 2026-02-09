@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text.Json;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 
@@ -47,9 +48,8 @@ public sealed class JesterExceptionHandler : IExceptionHandler
         problemDetails.Extensions["jesterCode"] = exception.GetType().Name;
 
         httpContext.Response.StatusCode = statusCode;
-        httpContext.Response.ContentType = "application/problem+json";
 
-        await httpContext.Response.WriteAsJsonAsync(problemDetails, cancellationToken);
+        await httpContext.Response.WriteAsJsonAsync(problemDetails, (JsonSerializerOptions?)null, "application/problem+json", cancellationToken);
 
         return true;
     }

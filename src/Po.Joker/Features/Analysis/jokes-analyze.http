@@ -1,3 +1,5 @@
+@baseUrl = https://localhost:5001
+
 ### Analyze a joke - Programming category
 POST {{baseUrl}}/api/jokes/analyze
 Content-Type: application/json

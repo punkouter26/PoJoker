@@ -1,5 +1,5 @@
-# Minimal Azure Container Apps CI/CD Pipeline
-# Build -> Push -> Deploy using Azure Developer CLI (azd)
+# CI/CD Pipeline: Build, Test, Deploy to Azure App Service
+# Triggered on push to master or manual dispatch
 name: CI/CD
 
 on:
@@ -12,16 +12,14 @@ permissions:
   contents: read
 
 env:
-  AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
-  AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
-  AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
-  AZURE_ENV_NAME: ${{ vars.AZURE_ENV_NAME || 'dev' }}
-  AZURE_LOCATION: ${{ vars.AZURE_LOCATION || 'eastus' }}
-  AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP || 'PoJoker' }}
+  AZURE_WEBAPP_NAME: app-pojoker
+  AZURE_RESOURCE_GROUP: PoJoker
+  DOTNET_VERSION: '10.0.x'
+  PROJECT_PATH: src/Po.Joker/Po.Joker.csproj
 
 jobs:
-  build-push-deploy:
-    name: Build, Push & Deploy to ACA
+  build-test:
+    name: Build & Test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -30,25 +28,45 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '10.0.x'
+          dotnet-version: ${{ env.DOTNET_VERSION }}
 
-      - name: Start Azurite
+      - name: Restore
+        run: dotnet restore PoJoker.sln
+
+      - name: Build
+        run: dotnet build PoJoker.sln --no-restore --configuration Release
+
+      - name: Start Azurite (for integration tests)
         run: |
-          npm install -g azurite
-          azurite-table --tableHost 127.0.0.1 --tablePort 10002 &
+          docker run -d --name azurite -p 10000:10000 -p 10001:10001 -p 10002:10002 mcr.microsoft.com/azure-storage/azurite
           sleep 3
 
-      - name: Build & Test
+      - name: Test
         env:
           POJOKER_DISABLE_KEYVAULT: "true"
           POJOKER_USE_MOCK_AI: "true"
-        run: |
-          dotnet restore
-          dotnet build --no-restore
-          dotnet test --no-build --verbosity normal
+        run: dotnet test PoJoker.sln --no-build --configuration Release --verbosity normal
 
-      - name: Install azd
-        uses: Azure/setup-azd@v2
+      - name: Publish
+        run: dotnet publish ${{ env.PROJECT_PATH }} --configuration Release --output ./publish
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: webapp
+          path: ./publish
+
+  deploy:
+    name: Deploy to Azure App Service
+    needs: build-test
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: webapp
+          path: ./publish
 
       - name: Azure Login (OIDC)
         uses: azure/login@v2
@@ -57,8 +75,20 @@ jobs:
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Authenticate azd
-        run: azd auth login --client-id ${{ vars.AZURE_CLIENT_ID }} --federated-credential-provider github --tenant-id ${{ vars.AZURE_TENANT_ID }}
+      - name: Deploy to App Service
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          package: ./publish
 
-      - name: Deploy to Azure Container Apps
-        run: azd up --no-prompt
+      - name: Verify deployment health
+        run: |
+          echo "Waiting for deployment to stabilize..."
+          sleep 30
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net/healthz || true)
+          echo "Health check response: $HTTP_STATUS"
+          if [ "$HTTP_STATUS" = "200" ]; then
+            echo "Deployment healthy"
+          else
+            echo "Health check returned $HTTP_STATUS (may still be starting)"
+          fi

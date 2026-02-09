@@ -125,6 +125,7 @@ azurite/
 __blobstorage__/
 __queuestorage__/
 __tablestorage__/
+__azurite_db_*__.json
 *.azurite
 
 # Application Insights

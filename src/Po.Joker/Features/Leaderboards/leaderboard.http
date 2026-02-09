@@ -1,3 +1,5 @@
+@baseUrl = https://localhost:5001
+
 ### Get Leaderboard - Top 10 by Triumph
 GET {{baseUrl}}/api/leaderboard?sortBy=Triumph&top=10
 Accept: application/json

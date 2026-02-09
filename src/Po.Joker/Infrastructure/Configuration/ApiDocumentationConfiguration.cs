@@ -1,25 +1,27 @@
-using Swashbuckle.AspNetCore.SwaggerGen;
+using Scalar.AspNetCore;
 
 namespace Po.Joker.Infrastructure.Configuration;
 
 /// <summary>
-/// Extension methods for configuring API documentation.
+/// Extension methods for configuring API documentation using Microsoft.AspNetCore.OpenApi.
+/// Replaces Swashbuckle with the native OpenAPI support introduced in .NET 9+.
+/// Uses Scalar as a lightweight, modern API reference UI.
 /// </summary>
 public static class ApiDocumentationConfiguration
 {
     /// <summary>
-    /// Adds Swagger/OpenAPI documentation.
+    /// Registers the built-in OpenAPI document generation services.
     /// </summary>
     public static IServiceCollection AddPoJokerApiDocumentation(this IServiceCollection services)
     {
-        services.AddEndpointsApiExplorer();
-        services.AddSwaggerGen(options =>
+        services.AddOpenApi(options =>
         {
-            options.SwaggerDoc("v1", new()
+            options.AddDocumentTransformer((document, context, ct) =>
             {
-                Title = "The Digital Jester API",
-                Version = "v1",
-                Description = "A Medieval AI Comedy Experience - API endpoints for joke fetching and analysis."
+                document.Info.Title = "The Digital Jester API";
+                document.Info.Version = "v1";
+                document.Info.Description = "A Medieval AI Comedy Experience - API endpoints for joke fetching and analysis.";
+                return Task.CompletedTask;
             });
         });
 
@@ -27,18 +29,20 @@ public static class ApiDocumentationConfiguration
     }
 
     /// <summary>
-    /// Configures Swagger UI middleware.
+    /// Maps the OpenAPI JSON endpoint and the Scalar API reference UI.
+    /// Scalar UI is only exposed in Development.
     /// </summary>
-    public static IApplicationBuilder UsePoJokerSwagger(this IApplicationBuilder app, IHostEnvironment environment)
+    public static WebApplication UsePoJokerOpenApi(this WebApplication app)
     {
-        if (environment.IsDevelopment())
+        // Always expose the OpenAPI JSON document
+        app.MapOpenApi();
+
+        if (app.Environment.IsDevelopment())
         {
-            app.UseSwagger();
-            app.UseSwaggerUI(options =>
+            // Scalar provides a modern, interactive API reference UI
+            app.MapScalarApiReference(options =>
             {
-                options.SwaggerEndpoint("/swagger/v1/swagger.json", "Digital Jester API v1");
-                options.RoutePrefix = "swagger";
-                options.DocumentTitle = "The Digital Jester - API Documentation";
+                options.WithTitle("The Digital Jester - API Documentation");
             });
         }
 

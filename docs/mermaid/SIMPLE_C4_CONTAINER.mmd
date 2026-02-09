@@ -1,8 +1,0 @@
-graph LR
-    User["👤 User"] -->|HTTPS| Client["Blazor WASM<br/>Po.Joker.Client"]
-    Client -->|HTTP API| Server["ASP.NET Server<br/>Po.Joker"]
-    Server -->|REST| External["Azure OpenAI<br/>JokeAPI<br/>Table Storage"]
-    
-    style Client fill:#4a9eff
-    style Server fill:#ff9f43
-    style External fill:#a29bfe

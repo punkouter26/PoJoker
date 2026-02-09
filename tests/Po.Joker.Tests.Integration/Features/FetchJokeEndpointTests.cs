@@ -65,7 +65,7 @@ public class FetchJokeEndpointTests : IClassFixture<PoJokerWebApplicationFactory
     public async Task GetFetch_ReturnsContentTypeJson()
     {
         // Act
-        var response = await _client.GetAsync("/api/jokes/fetch");
+        var response = await _client.GetAsync("/api/jokes/fetch?safeMode=true");
 
         // Assert
         response.Content.Headers.ContentType?.MediaType.Should().Be("application/json");

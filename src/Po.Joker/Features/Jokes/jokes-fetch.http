@@ -1,3 +1,5 @@
+@baseUrl = https://localhost:5001
+
 ### Fetch a random joke - Safe Mode enabled
 GET {{baseUrl}}/api/jokes/fetch?safeMode=true
 

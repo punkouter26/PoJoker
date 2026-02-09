@@ -7,48 +7,28 @@ namespace Po.Joker.Tests.Integration.Features;
 
 /// <summary>
 /// Integration tests for GET /api/diagnostics endpoint.
-/// Tests the full HTTP pipeline for diagnostics and health checks.
+/// Consolidated with Theory to reduce test count while maintaining coverage.
 /// </summary>
 public class DiagnosticsEndpointTests : IClassFixture<PoJokerWebApplicationFactory>
 {
-    private readonly PoJokerWebApplicationFactory _factory;
     private readonly HttpClient _client;
 
     public DiagnosticsEndpointTests(PoJokerWebApplicationFactory factory)
     {
-        _factory = factory;
-        _client = _factory.CreateClient();
+        _client = factory.CreateClient();
     }
 
     [Fact]
-    public async Task GetDiagnostics_ReturnsOk()
+    public async Task GetDiagnostics_ReturnsJsonWithExpectedShape()
     {
         // Act
         var response = await _client.GetAsync("/api/diagnostics");
 
         // Assert
-        response.StatusCode.Should().BeOneOf(new[] { HttpStatusCode.OK, HttpStatusCode.ServiceUnavailable },
-            "diagnostics may return 503 if services are unhealthy");
-    }
-
-    [Fact]
-    public async Task GetDiagnostics_ReturnsJsonContentType()
-    {
-        // Act
-        var response = await _client.GetAsync("/api/diagnostics");
-
-        // Assert
+        response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.ServiceUnavailable);
         response.Content.Headers.ContentType?.MediaType.Should().Be("application/json");
-    }
 
-    [Fact]
-    public async Task GetDiagnostics_ReturnsDiagnosticsDto()
-    {
-        // Act
-        var response = await _client.GetAsync("/api/diagnostics");
         var diagnostics = await response.Content.ReadFromJsonAsync<DiagnosticsDto>();
-
-        // Assert
         diagnostics.Should().NotBeNull();
         diagnostics!.Version.Should().NotBeNullOrEmpty();
         diagnostics.Environment.Should().NotBeNullOrEmpty();
@@ -56,136 +36,59 @@ public class DiagnosticsEndpointTests : IClassFixture<PoJokerWebApplicationFacto
     }
 
     [Fact]
-    public async Task GetDiagnostics_ReturnsOverallStatus()
+    public async Task GetDiagnostics_ReturnsStatusAndUptime()
     {
         // Act
-        var response = await _client.GetAsync("/api/diagnostics");
-        var diagnostics = await response.Content.ReadFromJsonAsync<DiagnosticsDto>();
+        var diagnostics = await GetDiagnosticsAsync();
 
         // Assert
-        diagnostics.Should().NotBeNull();
-        diagnostics!.Status.Should().BeOneOf(HealthStatus.Healthy, HealthStatus.Degraded, HealthStatus.Unhealthy);
+        diagnostics.Status.Should().BeOneOf(HealthStatus.Healthy, HealthStatus.Degraded, HealthStatus.Unhealthy);
+        diagnostics.Uptime.Should().BeGreaterThanOrEqualTo(TimeSpan.Zero);
+        diagnostics.TotalJokesServed.Should().BeGreaterThanOrEqualTo(0);
+        diagnostics.TotalAnalyses.Should().BeGreaterThanOrEqualTo(0);
+        diagnostics.TriumphRate.Should().BeInRange(0.0, 100.0);
+    }
+
+    [Theory]
+    [InlineData("JokeAPI")]
+    [InlineData("AzureOpenAI")]
+    [InlineData("TableStorage")]
+    public async Task GetDiagnostics_IncludesExpectedHealthCheck(string serviceName)
+    {
+        // Act
+        var diagnostics = await GetDiagnosticsAsync();
+
+        // Assert
+        diagnostics.Services.Should().Contain(s => s.Name == serviceName,
+            $"{serviceName} health check should be included");
     }
 
     [Fact]
-    public async Task GetDiagnostics_ReturnsServiceHealthChecks()
+    public async Task GetDiagnostics_ServiceHealthHasValidProperties()
     {
         // Act
-        var response = await _client.GetAsync("/api/diagnostics");
-        var diagnostics = await response.Content.ReadFromJsonAsync<DiagnosticsDto>();
+        var diagnostics = await GetDiagnosticsAsync();
 
         // Assert
-        diagnostics.Should().NotBeNull();
-        diagnostics!.Services.Should().NotBeEmpty("at least one health check should be configured");
-        
         foreach (var service in diagnostics.Services)
         {
             service.Name.Should().NotBeNullOrEmpty();
             service.Status.Should().BeOneOf(HealthStatus.Healthy, HealthStatus.Degraded, HealthStatus.Unhealthy);
             service.LastChecked.Should().BeCloseTo(DateTimeOffset.UtcNow, TimeSpan.FromMinutes(1));
-        }
-    }
 
-    [Fact]
-    public async Task GetDiagnostics_IncludesJokeApiHealthCheck()
-    {
-        // Act
-        var response = await _client.GetAsync("/api/diagnostics");
-        var diagnostics = await response.Content.ReadFromJsonAsync<DiagnosticsDto>();
-
-        // Assert
-        diagnostics.Should().NotBeNull();
-        diagnostics!.Services.Should().Contain(s => s.Name == "JokeAPI", 
-            "JokeAPI health check should be included");
-    }
-
-    [Fact]
-    public async Task GetDiagnostics_IncludesAzureOpenAIHealthCheck()
-    {
-        // Act
-        var response = await _client.GetAsync("/api/diagnostics");
-        var diagnostics = await response.Content.ReadFromJsonAsync<DiagnosticsDto>();
-
-        // Assert
-        diagnostics.Should().NotBeNull();
-        diagnostics!.Services.Should().Contain(s => s.Name == "AzureOpenAI", 
-            "AzureOpenAI health check should be included");
-    }
-
-    [Fact]
-    public async Task GetDiagnostics_IncludesTableStorageHealthCheck()
-    {
-        // Act
-        var response = await _client.GetAsync("/api/diagnostics");
-        var diagnostics = await response.Content.ReadFromJsonAsync<DiagnosticsDto>();
-
-        // Assert
-        diagnostics.Should().NotBeNull();
-        diagnostics!.Services.Should().Contain(s => s.Name == "TableStorage", 
-            "TableStorage health check should be included");
-    }
-
-    [Fact]
-    public async Task GetDiagnostics_ReturnsUptimeInformation()
-    {
-        // Act
-        var response = await _client.GetAsync("/api/diagnostics");
-        var diagnostics = await response.Content.ReadFromJsonAsync<DiagnosticsDto>();
-
-        // Assert
-        diagnostics.Should().NotBeNull();
-        diagnostics.Uptime.Should().BeGreaterThanOrEqualTo(TimeSpan.Zero,
-            "uptime should be positive");
-    }
-
-    [Fact]
-    public async Task GetDiagnostics_ReturnsMetricsCounters()
-    {
-        // Act
-        var response = await _client.GetAsync("/api/diagnostics");
-        var diagnostics = await response.Content.ReadFromJsonAsync<DiagnosticsDto>();
-
-        // Assert
-        diagnostics.Should().NotBeNull();
-        diagnostics!.TotalJokesServed.Should().BeGreaterThanOrEqualTo(0);
-        diagnostics.TotalAnalyses.Should().BeGreaterThanOrEqualTo(0);
-        diagnostics.TriumphRate.Should().BeInRange(0.0, 100.0);
-    }
-
-    [Fact]
-    public async Task GetDiagnostics_ServiceHealthContainsResponseTime()
-    {
-        // Act
-        var response = await _client.GetAsync("/api/diagnostics");
-        var diagnostics = await response.Content.ReadFromJsonAsync<DiagnosticsDto>();
-
-        // Assert
-        diagnostics.Should().NotBeNull();
-        foreach (var service in diagnostics!.Services)
-        {
             if (service.Status == HealthStatus.Healthy)
-            {
-                service.ResponseTimeMs.Should().BeGreaterThanOrEqualTo(0, 
-                    "healthy services should have a response time measurement");
-            }
+                service.ResponseTimeMs.Should().BeGreaterThanOrEqualTo(0);
+
+            if (service.Status == HealthStatus.Unhealthy)
+                service.Message.Should().NotBeNullOrEmpty();
         }
     }
 
-    [Fact]
-    public async Task GetDiagnostics_UnhealthyServicesHaveErrorMessage()
+    private async Task<DiagnosticsDto> GetDiagnosticsAsync()
     {
-        // Act
         var response = await _client.GetAsync("/api/diagnostics");
-        var diagnostics = await response.Content.ReadFromJsonAsync<DiagnosticsDto>();
-
-        // Assert - if any service is unhealthy, it should have a message
-        diagnostics.Should().NotBeNull();
-        var unhealthyServices = diagnostics!.Services.Where(s => s.Status == HealthStatus.Unhealthy);
-        
-        foreach (var service in unhealthyServices)
-        {
-            service.Message.Should().NotBeNullOrEmpty(
-                $"{service.Name} is unhealthy and should provide an error message");
-        }
+        var dto = await response.Content.ReadFromJsonAsync<DiagnosticsDto>();
+        dto.Should().NotBeNull();
+        return dto!;
     }
 }

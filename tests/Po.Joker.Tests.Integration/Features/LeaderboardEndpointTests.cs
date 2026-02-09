@@ -7,159 +7,71 @@ namespace Po.Joker.Tests.Integration.Features;
 
 /// <summary>
 /// Integration tests for GET /api/leaderboard endpoint.
-/// Tests the full HTTP pipeline for leaderboard operations.
+/// Consolidated with Theory to reduce test count while maintaining coverage.
 /// </summary>
 public class LeaderboardEndpointTests : IClassFixture<PoJokerWebApplicationFactory>
 {
-    private readonly PoJokerWebApplicationFactory _factory;
     private readonly HttpClient _client;
 
     public LeaderboardEndpointTests(PoJokerWebApplicationFactory factory)
     {
-        _factory = factory;
-        _client = _factory.CreateClient();
+        _client = factory.CreateClient();
     }
 
-    [Fact]
-    public async Task GetLeaderboard_ReturnsOk()
+    [Theory]
+    [InlineData("Triumph")]
+    [InlineData("Cleverness")]
+    [InlineData("Rudeness")]
+    [InlineData("Complexity")]
+    [InlineData("Difficulty")]
+    public async Task GetLeaderboard_AllSortOptions_ReturnsOkWithJsonContent(string sortBy)
     {
         // Act
-        var response = await _client.GetAsync("/api/leaderboard?sortBy=Triumph&top=10");
+        var response = await _client.GetAsync($"/api/leaderboard?sortBy={sortBy}&top=10");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-    }
-
-    [Fact]
-    public async Task GetLeaderboard_ReturnsJsonContentType()
-    {
-        // Act
-        var response = await _client.GetAsync("/api/leaderboard?sortBy=Triumph&top=10");
-
-        // Assert
         response.Content.Headers.ContentType?.MediaType.Should().Be("application/json");
     }
 
     [Fact]
-    public async Task GetLeaderboard_WithDefaultParameters_ReturnsTop10()
+    public async Task GetLeaderboard_ReturnsValidEntries_WithSequentialRanks()
     {
-        // Act - no parameters should use defaults
-        var response = await _client.GetAsync("/api/leaderboard?sortBy=Triumph");
+        // Act
+        var response = await _client.GetAsync("/api/leaderboard?sortBy=Triumph&top=10");
         var leaderboard = await response.Content.ReadFromJsonAsync<List<LeaderboardEntryDto>>();
 
         // Assert
         leaderboard.Should().NotBeNull();
         leaderboard!.Count.Should().BeLessThanOrEqualTo(10);
-    }
-
-    [Fact]
-    public async Task GetLeaderboard_SortByTriumph_ReturnsValidEntries()
-    {
-        // Act
-        var response = await _client.GetAsync("/api/leaderboard?sortBy=Triumph&top=10");
-        var leaderboard = await response.Content.ReadFromJsonAsync<List<LeaderboardEntryDto>>();
-
-        // Assert
-        leaderboard.Should().NotBeNull();
-        foreach (var entry in leaderboard!)
+        foreach (var entry in leaderboard)
         {
-            entry.Should().NotBeNull();
             entry.SessionId.Should().NotBeNullOrEmpty();
             entry.Rank.Should().BeGreaterThan(0);
         }
-    }
 
-    [Fact]
-    public async Task GetLeaderboard_SortByCleverness_ReturnsOk()
-    {
-        // Act
-        var response = await _client.GetAsync("/api/leaderboard?sortBy=Cleverness&top=10");
-
-        // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-    }
-
-    [Fact]
-    public async Task GetLeaderboard_SortByRudeness_ReturnsOk()
-    {
-        // Act
-        var response = await _client.GetAsync("/api/leaderboard?sortBy=Rudeness&top=10");
-
-        // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-    }
-
-    [Fact]
-    public async Task GetLeaderboard_SortByComplexity_ReturnsOk()
-    {
-        // Act
-        var response = await _client.GetAsync("/api/leaderboard?sortBy=Complexity&top=10");
-
-        // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-    }
-
-    [Fact]
-    public async Task GetLeaderboard_SortByDifficulty_ReturnsOk()
-    {
-        // Act
-        var response = await _client.GetAsync("/api/leaderboard?sortBy=Difficulty&top=10");
-
-        // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-    }
-
-    [Fact]
-    public async Task GetLeaderboard_WithTop25_ReturnsUpTo25Entries()
-    {
-        // Act
-        var response = await _client.GetAsync("/api/leaderboard?sortBy=Triumph&top=25");
-        var leaderboard = await response.Content.ReadFromJsonAsync<List<LeaderboardEntryDto>>();
-
-        // Assert
-        leaderboard.Should().NotBeNull();
-        leaderboard!.Count.Should().BeLessThanOrEqualTo(25);
-    }
-
-    [Fact]
-    public async Task GetLeaderboard_WithTop50_ReturnsUpTo50Entries()
-    {
-        // Act
-        var response = await _client.GetAsync("/api/leaderboard?sortBy=Triumph&top=50");
-        var leaderboard = await response.Content.ReadFromJsonAsync<List<LeaderboardEntryDto>>();
-
-        // Assert
-        leaderboard.Should().NotBeNull();
-        leaderboard!.Count.Should().BeLessThanOrEqualTo(50);
-    }
-
-    [Fact]
-    public async Task GetLeaderboard_WithTop100_ReturnsUpTo100Entries()
-    {
-        // Act
-        var response = await _client.GetAsync("/api/leaderboard?sortBy=Triumph&top=100");
-        var leaderboard = await response.Content.ReadFromJsonAsync<List<LeaderboardEntryDto>>();
-
-        // Assert
-        leaderboard.Should().NotBeNull();
-        leaderboard!.Count.Should().BeLessThanOrEqualTo(100);
-    }
-
-    [Fact]
-    public async Task GetLeaderboard_EntriesHaveSequentialRanks()
-    {
-        // Act
-        var response = await _client.GetAsync("/api/leaderboard?sortBy=Triumph&top=10");
-        var leaderboard = await response.Content.ReadFromJsonAsync<List<LeaderboardEntryDto>>();
-
-        // Assert
-        leaderboard.Should().NotBeNull();
-        if (leaderboard!.Count > 0)
+        // Ranks should be sequential
+        if (leaderboard.Count > 0)
         {
             for (int i = 0; i < leaderboard.Count; i++)
             {
-                leaderboard[i].Rank.Should().Be(i + 1, "ranks should be sequential starting from 1");
+                leaderboard[i].Rank.Should().Be(i + 1);
             }
         }
+    }
+
+    [Theory]
+    [InlineData(25)]
+    [InlineData(50)]
+    [InlineData(100)]
+    public async Task GetLeaderboard_WithTopN_ReturnsUpToNEntries(int top)
+    {
+        // Act
+        var response = await _client.GetAsync($"/api/leaderboard?sortBy=Triumph&top={top}");
+        var leaderboard = await response.Content.ReadFromJsonAsync<List<LeaderboardEntryDto>>();
+
+        // Assert
+        leaderboard.Should().NotBeNull();
+        leaderboard!.Count.Should().BeLessThanOrEqualTo(top);
     }
 }

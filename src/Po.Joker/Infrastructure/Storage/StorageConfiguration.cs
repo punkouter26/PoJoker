@@ -4,19 +4,51 @@ using Azure.Identity;
 namespace Po.Joker.Infrastructure.Storage;
 
 /// <summary>
-/// Configuration helper for Azure Table Storage connections.
-/// Uses Aspire-provided TableServiceClient from the AppHost.
+/// Configuration for Azure Table Storage connections.
+/// Uses Azurite (UseDevelopmentStorage) locally and Managed Identity in production.
 /// </summary>
 public static class StorageConfiguration
 {
     public const string TableName = "jokeperformances";
 
     /// <summary>
-    /// Configures TableClient using Aspire-provided TableServiceClient.
-    /// The TableServiceClient is injected via builder.AddAzureTableClient() in Program.cs.
+    /// Registers TableServiceClient and TableClient for Azure Table Storage.
+    /// In Development: uses connection string from config or Azurite fallback.
+    /// In Production: uses Managed Identity with the configured storage account name.
     /// </summary>
-    public static IServiceCollection AddPoJokerTableStorage(this IServiceCollection services)
+    public static IServiceCollection AddPoJokerStorage(
+        this IServiceCollection services,
+        IConfiguration configuration,
+        IHostEnvironment environment)
     {
+        services.AddSingleton<TableServiceClient>(sp =>
+        {
+            // Check for explicit connection string first (integration tests, CI, Azurite)
+            var connectionString = configuration.GetConnectionString("tables");
+            if (!string.IsNullOrEmpty(connectionString))
+            {
+                return new TableServiceClient(connectionString);
+            }
+
+            if (environment.IsDevelopment())
+            {
+                // Default to Azurite for local development
+                return new TableServiceClient("UseDevelopmentStorage=true");
+            }
+
+            // Production: use Managed Identity with storage account name
+            var storageAccountName = configuration["Azure:StorageAccountName"];
+            if (string.IsNullOrEmpty(storageAccountName))
+            {
+                throw new InvalidOperationException(
+                    "Azure:StorageAccountName must be configured for production, or provide ConnectionStrings:tables.");
+            }
+
+            var tableUri = new Uri($"https://{storageAccountName}.table.core.windows.net");
+            return new TableServiceClient(tableUri, new DefaultAzureCredential());
+        });
+
+        // Register the named TableClient for the jokeperformances table
         services.AddSingleton<TableClient>(sp =>
         {
             var tableServiceClient = sp.GetRequiredService<TableServiceClient>();
@@ -40,37 +72,6 @@ public static class StorageConfiguration
         });
 
         return services;
-    }
-
-    /// <summary>
-    /// Legacy configuration for non-Aspire scenarios (standalone deployment).
-    /// </summary>
-    public static IServiceCollection AddPoJokerStorageLegacy(
-        this IServiceCollection services,
-        IConfiguration configuration,
-        IHostEnvironment environment)
-    {
-        services.AddSingleton<TableServiceClient>(sp =>
-        {
-            if (environment.IsDevelopment())
-            {
-                // Use Azurite for local development
-                return new TableServiceClient("UseDevelopmentStorage=true");
-            }
-
-            // Use Azure Storage with Managed Identity for production
-            var storageAccountName = configuration["Azure:StorageAccountName"];
-            if (string.IsNullOrEmpty(storageAccountName))
-            {
-                throw new InvalidOperationException(
-                    "Azure:StorageAccountName must be configured for production environment");
-            }
-
-            var tableUri = new Uri($"https://{storageAccountName}.table.core.windows.net");
-            return new TableServiceClient(tableUri, new DefaultAzureCredential());
-        });
-
-        return services.AddPoJokerTableStorage();
     }
 
     /// <summary>

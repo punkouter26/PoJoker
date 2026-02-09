@@ -13,7 +13,7 @@ namespace Po.Joker.Features.Analysis;
 /// </summary>
 public sealed class AiJesterSettings
 {
-    public string DeploymentName { get; init; } = "gpt-4o-mini";
+    public string DeploymentName { get; init; } = "gpt-4.1-nano";
 }
 
 /// <summary>

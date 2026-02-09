@@ -1,0 +1,8 @@
+# Exclude build outputs, dependencies, and generated files from AI focus
+bin/
+obj/
+node_modules/
+*.user
+*.suo
+*.cache
+TestResults/
