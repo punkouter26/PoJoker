@@ -1,7 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using FluentAssertions;
-using Po.Joker.Shared.DTOs;
+using Po.Joker.DTOs;
 
 namespace Po.Joker.Tests.Integration.Features;
 

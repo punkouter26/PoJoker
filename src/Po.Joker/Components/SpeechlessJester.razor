@@ -1,0 +1,91 @@
+
+<div class="speechless-jester @(IsVisible ? "visible" : "")">
+    <div class="speechless-content">
+        <p class="speechless-message">@Message</p>
+        @if (ShowResumeButton)
+        {
+            <button class="resume-button" @onclick="OnResumeClicked">Resume</button>
+        }
+        @if (AutoResumeSeconds > 0)
+        {
+            <p class="auto-resume-notice">
+                Resuming in <span class="countdown">@_countdown</span>s
+            </p>
+        }
+    </div>
+</div>
+
+@code {
+    private int _countdown;
+    private System.Timers.Timer? _timer;
+
+    [Parameter]
+    public bool IsVisible { get; set; }
+
+    [Parameter]
+    public string Message { get; set; } = "The Court's content policy has silenced this jest.";
+
+    [Parameter]
+    public bool ShowResumeButton { get; set; } = true;
+
+    [Parameter]
+    public int AutoResumeSeconds { get; set; } = 5;
+
+    [Parameter]
+    public EventCallback OnResume { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        if (IsVisible && AutoResumeSeconds > 0)
+        {
+            StartCountdown();
+        }
+        else
+        {
+            StopCountdown();
+        }
+    }
+
+    private void StartCountdown()
+    {
+        _countdown = AutoResumeSeconds;
+        _timer?.Dispose();
+        _timer = new System.Timers.Timer(1000);
+        _timer.Elapsed += async (sender, args) =>
+        {
+            _countdown--;
+            if (_countdown <= 0)
+            {
+                StopCountdown();
+                await InvokeAsync(async () =>
+                {
+                    await OnResume.InvokeAsync();
+                    StateHasChanged();
+                });
+            }
+            else
+            {
+                await InvokeAsync(StateHasChanged);
+            }
+        };
+        _timer.Start();
+    }
+
+    private void StopCountdown()
+    {
+        _timer?.Stop();
+        _timer?.Dispose();
+        _timer = null;
+    }
+
+    private async Task OnResumeClicked()
+    {
+        StopCountdown();
+        await OnResume.InvokeAsync();
+    }
+
+    public void Dispose()
+    {
+        StopCountdown();
+    }
+}

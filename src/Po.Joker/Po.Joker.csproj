@@ -6,20 +6,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
     <UserSecretsId>po-joker-dev</UserSecretsId>
-    <!-- Required for Blazor WebAssembly hosting in container deployments -->
-    <StaticWebAssetProjectMode>All</StaticWebAssetProjectMode>
-    <WasmBlazorWebAssemblyHost>true</WasmBlazorWebAssemblyHost>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Po.Joker.Client\Po.Joker.Client.csproj" />
-    <ProjectReference Include="..\Po.Joker.Shared\Po.Joker.Shared.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <!-- Blazor WebAssembly Support -->
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" />
-    
     <!-- CQRS / Mediator -->
     <PackageReference Include="MediatR" />
     
@@ -49,6 +38,7 @@
     <PackageReference Include="Azure.Extensions.AspNetCore.Configuration.Secrets" />
     
     <!-- Validation -->
+    <PackageReference Include="FluentValidation" />
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
     
     <!-- API Documentation -->

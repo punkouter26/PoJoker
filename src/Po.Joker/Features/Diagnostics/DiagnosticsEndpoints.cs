@@ -1,6 +1,6 @@
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using Po.Joker.Shared.DTOs;
+using Po.Joker.DTOs;
 
 namespace Po.Joker.Features.Diagnostics;
 

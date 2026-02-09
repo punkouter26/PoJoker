@@ -1,7 +1,7 @@
 using Po.Joker.Features.Analysis;
 using Po.Joker.Infrastructure.Storage;
-using Po.Joker.Shared.Contracts;
-using Po.Joker.Shared.DTOs;
+using Po.Joker.Contracts;
+using Po.Joker.DTOs;
 
 namespace Po.Joker.Tests.Unit.Features;
 

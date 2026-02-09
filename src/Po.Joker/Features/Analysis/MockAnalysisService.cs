@@ -1,6 +1,6 @@
 using System.Diagnostics;
-using Po.Joker.Shared.Contracts;
-using Po.Joker.Shared.DTOs;
+using Po.Joker.Contracts;
+using Po.Joker.DTOs;
 
 namespace Po.Joker.Features.Analysis;
 

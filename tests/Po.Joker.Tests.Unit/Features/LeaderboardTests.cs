@@ -3,7 +3,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Po.Joker.Features.Leaderboards;
 using Po.Joker.Infrastructure.Storage;
-using Po.Joker.Shared.DTOs;
+using Po.Joker.DTOs;
 
 namespace Po.Joker.Tests.Unit.Features;
 

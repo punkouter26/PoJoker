@@ -1,4 +1,4 @@
-using Po.Joker.Shared.DTOs;
+using Po.Joker.DTOs;
 
 namespace Po.Joker.Features.Jokes;
 

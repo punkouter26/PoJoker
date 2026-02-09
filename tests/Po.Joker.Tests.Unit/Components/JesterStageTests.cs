@@ -1,10 +1,10 @@
 using Bunit;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
-using Po.Joker.Client.Components;
-using Po.Joker.Client.Services;
-using Po.Joker.Shared.DTOs;
-using Po.Joker.Shared.Enums;
+using Po.Joker.Components;
+using Po.Joker.Services;
+using Po.Joker.DTOs;
+using Po.Joker.Enums;
 
 namespace Po.Joker.Tests.Unit.Components;
 

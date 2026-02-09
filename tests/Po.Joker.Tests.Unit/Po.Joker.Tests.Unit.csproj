@@ -26,8 +26,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Po.Joker\Po.Joker.csproj" />
-    <ProjectReference Include="..\..\src\Po.Joker.Client\Po.Joker.Client.csproj" />
-    <ProjectReference Include="..\..\src\Po.Joker.Shared\Po.Joker.Shared.csproj" />
   </ItemGroup>
 
 </Project>

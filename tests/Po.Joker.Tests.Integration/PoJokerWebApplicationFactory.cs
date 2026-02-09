@@ -6,8 +6,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Po.Joker.Features.Analysis;
 using Po.Joker.Features.Jokes;
-using Po.Joker.Shared.Contracts;
-using Po.Joker.Shared.DTOs;
+using Po.Joker.Contracts;
+using Po.Joker.DTOs;
 
 namespace Po.Joker.Tests.Integration;
 

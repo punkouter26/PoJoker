@@ -1,7 +1,7 @@
 using FluentAssertions;
 using Po.Joker.Infrastructure.Storage;
-using Po.Joker.Shared.DTOs;
-using Po.Joker.Shared.Enums;
+using Po.Joker.DTOs;
+using Po.Joker.Enums;
 
 namespace Po.Joker.Tests.Unit.Infrastructure;
 

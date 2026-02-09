@@ -1,5 +1,5 @@
-using Po.Joker.Client.Services;
-using Po.Joker.Shared.Contracts;
+using Po.Joker.Services;
+using Po.Joker.Contracts;
 
 namespace Po.Joker.Infrastructure.Configuration;
 
@@ -14,8 +14,7 @@ public static class BlazorConfiguration
     public static IServiceCollection AddPoJokerBlazor(this IServiceCollection services)
     {
         services.AddRazorComponents()
-            .AddInteractiveServerComponents()
-            .AddInteractiveWebAssemblyComponents();
+            .AddInteractiveServerComponents();
 
         // Add HttpClient for Blazor components (server-side)
         services.AddScoped(sp =>

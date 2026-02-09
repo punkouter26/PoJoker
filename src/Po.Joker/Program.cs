@@ -3,12 +3,11 @@ using Po.Joker.Features.Analysis;
 using Po.Joker.Features.Diagnostics;
 using Po.Joker.Features.Jokes;
 using Po.Joker.Features.Leaderboards;
-using Po.Joker.Shared.Contracts;
+using Po.Joker.Contracts;
 using Po.Joker.Infrastructure.Configuration;
 using Po.Joker.Infrastructure.ExceptionHandling;
 using Po.Joker.Infrastructure.Storage;
 using Po.Joker.Infrastructure.Telemetry;
-using System.Linq;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -65,11 +64,7 @@ var app = builder.Build();
 // Configure the HTTP request pipeline
 app.UseExceptionHandler();
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseWebAssemblyDebugging();
-}
-else
+if (!app.Environment.IsDevelopment())
 {
     app.UseHsts();
 }
@@ -101,20 +96,7 @@ app.MapDiagnosticsEndpoints();
 
 app.MapStaticAssets();
 
-// Configure Razor Components and interactive render modes. Avoid adding duplicate assemblies
-var additionalAssemblies = new[]
-{
-    typeof(Po.Joker.Client._Imports).Assembly,
-    typeof(Po.Joker.Components.App).Assembly
-}
-.Where(a => a != typeof(Program).Assembly)
-.GroupBy(a => a.FullName)
-.Select(g => g.First())
-.ToArray();
-
 app.MapRazorComponents<App>()
-    .AddInteractiveServerRenderMode()
-    .AddInteractiveWebAssemblyRenderMode()
-    .AddAdditionalAssemblies(additionalAssemblies);
+    .AddInteractiveServerRenderMode();
 
 app.Run();

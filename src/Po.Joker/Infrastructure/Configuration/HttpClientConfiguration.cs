@@ -1,6 +1,6 @@
 using Po.Joker.Features.Jokes;
 using Po.Joker.Infrastructure.Resilience;
-using Po.Joker.Shared.Contracts;
+using Po.Joker.Contracts;
 
 namespace Po.Joker.Infrastructure.Configuration;
 

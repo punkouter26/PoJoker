@@ -1,5 +1,5 @@
 using Po.Joker.Features.Jokes;
-using Po.Joker.Shared.DTOs;
+using Po.Joker.DTOs;
 
 namespace Po.Joker.Tests.Unit.Features;
 

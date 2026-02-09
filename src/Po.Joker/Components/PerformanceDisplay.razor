@@ -1,0 +1,62 @@
+
+@* Performance Display Component - Shows current state *@
+<div class="stage-content">
+    @switch (CurrentState)
+    {
+        case PerformanceState.Idle:
+            <div class="idle-message">
+                <p>Ready to start.</p>
+                <p class="subtitle">Press start to fetch a joke.</p>
+            </div>
+            break;
+
+        case PerformanceState.Fetching:
+            <div class="loading-state">
+                <div class="loading-jester"></div>
+                <p>Fetching...</p>
+            </div>
+            break;
+
+        case PerformanceState.ShowingSetup:
+        case PerformanceState.ShowingAiGuess:
+        case PerformanceState.RevealingPunchline:
+            @if (CurrentJoke is not null)
+            {
+                <JokeCard Joke="@CurrentJoke"
+                          ShowSetup="@(CurrentState >= PerformanceState.ShowingSetup)"
+                          ShowPunchline="@(CurrentState >= PerformanceState.RevealingPunchline)"
+                          ShowCategory="true"
+                          AiGuess="@(CurrentState >= PerformanceState.ShowingAiGuess ? CurrentAnalysis?.AiPunchline : null)"
+                          IsTriumph="@(CurrentState >= PerformanceState.RevealingPunchline ? CurrentAnalysis?.IsTriumph : null)"
+                          ShowResult="@(CurrentState >= PerformanceState.RevealingPunchline)" />
+
+                @if (CurrentState >= PerformanceState.RevealingPunchline && CurrentAnalysis?.Rating is not null)
+                {
+                    <div class="analysis-details">
+                        <CommentaryBubble 
+                            Commentary="@CurrentAnalysis.Rating.Commentary" 
+                            IsTriumph="@CurrentAnalysis.IsTriumph" />
+                    </div>
+                }
+            }
+            break;
+
+        case PerformanceState.Transitioning:
+            <div class="transition-state">
+                <div class="loading-dots"><span></span><span></span><span></span></div>
+                <p>Next joke incoming...</p>
+            </div>
+            break;
+    }
+</div>
+
+@code {
+    [Parameter]
+    public PerformanceState CurrentState { get; set; } = PerformanceState.Idle;
+
+    [Parameter]
+    public JokeDto? CurrentJoke { get; set; }
+
+    [Parameter]
+    public JokeAnalysisDto? CurrentAnalysis { get; set; }
+}

@@ -5,7 +5,7 @@ using Azure.Extensions.AspNetCore.Configuration.Secrets;
 using Azure.Identity;
 using Po.Joker.Features.Analysis;
 using Po.Joker.Infrastructure.Storage;
-using Po.Joker.Shared.Contracts;
+using Po.Joker.Contracts;
 
 namespace Po.Joker.Infrastructure.Configuration;
 

@@ -4,8 +4,8 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Po.Joker.Features.Diagnostics;
-using Po.Joker.Shared.DTOs;
-using DtoHealthStatus = Po.Joker.Shared.DTOs.HealthStatus;
+using Po.Joker.DTOs;
+using DtoHealthStatus = Po.Joker.DTOs.HealthStatus;
 using MsHealthStatus = Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus;
 
 namespace Po.Joker.Tests.Unit.Features;

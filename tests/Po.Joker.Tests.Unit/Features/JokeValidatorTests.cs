@@ -1,7 +1,7 @@
 using FluentAssertions;
 using FluentValidation.TestHelper;
-using Po.Joker.Shared.DTOs;
-using Po.Joker.Shared.Validation;
+using Po.Joker.DTOs;
+using Po.Joker.Validation;
 
 namespace Po.Joker.Tests.Unit.Features;
 

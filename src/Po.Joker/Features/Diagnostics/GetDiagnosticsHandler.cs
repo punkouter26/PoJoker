@@ -2,7 +2,7 @@ using System.Diagnostics;
 using MediatR;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Po.Joker.Infrastructure.Telemetry;
-using Po.Joker.Shared.DTOs;
+using Po.Joker.DTOs;
 
 namespace Po.Joker.Features.Diagnostics;
 
@@ -62,14 +62,14 @@ public sealed class GetDiagnosticsHandler : IRequestHandler<GetDiagnosticsQuery,
         };
     }
 
-    private static Shared.DTOs.HealthStatus MapHealthStatus(Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus status)
+    private static DTOs.HealthStatus MapHealthStatus(Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus status)
     {
         return status switch
         {
-            Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Healthy => Shared.DTOs.HealthStatus.Healthy,
-            Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Degraded => Shared.DTOs.HealthStatus.Degraded,
-            Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Unhealthy => Shared.DTOs.HealthStatus.Unhealthy,
-            _ => Shared.DTOs.HealthStatus.Unhealthy
+            Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Healthy => DTOs.HealthStatus.Healthy,
+            Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Degraded => DTOs.HealthStatus.Degraded,
+            Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Unhealthy => DTOs.HealthStatus.Unhealthy,
+            _ => DTOs.HealthStatus.Unhealthy
         };
     }
 

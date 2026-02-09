@@ -1,7 +1,7 @@
 using Bunit;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
-using Po.Joker.Client.Components;
+using Po.Joker.Components;
 
 namespace Po.Joker.Tests.Unit.Components;
 

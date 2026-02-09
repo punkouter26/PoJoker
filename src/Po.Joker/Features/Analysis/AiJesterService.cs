@@ -3,8 +3,8 @@ using Azure.AI.OpenAI;
 using OpenAI.Chat;
 using Po.Joker.Infrastructure.ExceptionHandling;
 using Po.Joker.Infrastructure.Telemetry;
-using Po.Joker.Shared.Contracts;
-using Po.Joker.Shared.DTOs;
+using Po.Joker.Contracts;
+using Po.Joker.DTOs;
 
 namespace Po.Joker.Features.Analysis;
 

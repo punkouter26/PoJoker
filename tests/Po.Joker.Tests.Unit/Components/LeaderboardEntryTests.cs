@@ -1,8 +1,8 @@
 using Bunit;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
-using Po.Joker.Client.Components;
-using Po.Joker.Shared.DTOs;
+using Po.Joker.Components;
+using Po.Joker.DTOs;
 
 namespace Po.Joker.Tests.Unit.Components;
 

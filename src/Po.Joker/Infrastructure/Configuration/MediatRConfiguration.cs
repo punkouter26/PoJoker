@@ -1,6 +1,6 @@
 using FluentValidation;
 using MediatR;
-using Po.Joker.Shared.Validation;
+using Po.Joker.Validation;
 
 namespace Po.Joker.Infrastructure.Configuration;
 

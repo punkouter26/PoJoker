@@ -1,0 +1,36 @@
+
+<div class="safe-mode-toggle">
+    <label class="toggle-label">
+        <input type="checkbox" 
+               checked="@IsEnabled" 
+               @onchange="HandleToggle" />
+        <span class="toggle-slider"></span>
+        <span class="toggle-text">
+            🛡️ Safe Mode @(IsEnabled ? "On" : "Off")
+        </span>
+    </label>
+    <p class="toggle-hint">
+        @if (IsEnabled)
+        {
+            <text>Filtering out inappropriate content</text>
+        }
+        else
+        {
+            <text>All joke categories enabled</text>
+        }
+    </p>
+</div>
+
+@code {
+    [Parameter]
+    public bool IsEnabled { get; set; } = true;
+
+    [Parameter]
+    public EventCallback<bool> IsEnabledChanged { get; set; }
+
+    private async Task HandleToggle(ChangeEventArgs e)
+    {
+        IsEnabled = (bool)(e.Value ?? true);
+        await IsEnabledChanged.InvokeAsync(IsEnabled);
+    }
+}

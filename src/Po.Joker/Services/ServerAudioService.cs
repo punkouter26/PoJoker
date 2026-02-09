@@ -1,4 +1,4 @@
-using Po.Joker.Client.Services;
+using Po.Joker.Services;
 
 namespace Po.Joker.Services;
 
