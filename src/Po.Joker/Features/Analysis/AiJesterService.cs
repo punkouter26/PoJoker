@@ -9,22 +9,16 @@ using Po.Joker.DTOs;
 namespace Po.Joker.Features.Analysis;
 
 /// <summary>
-/// Settings for AI Jester service.
-/// </summary>
-public sealed class AiJesterSettings
-{
-    public string DeploymentName { get; init; } = "gpt-4.1-nano";
-}
-
-/// <summary>
 /// AI-powered joke analysis service using Azure OpenAI.
 /// Predicts punchlines and calculates triumph/defeat.
+/// Implements circuit breaker pattern with timeouts and fallback behavior.
 /// </summary>
 public sealed class AiJesterService : IAnalysisService
 {
     private readonly AzureOpenAIClient _openAiClient;
     private readonly ILogger<AiJesterService> _logger;
     private readonly string _deploymentName;
+    private readonly int _timeoutSeconds;
 
     private const string SystemPrompt = """
         You are a Digital Jester - an AI that tries to predict punchlines to jokes.
@@ -42,19 +36,19 @@ public sealed class AiJesterService : IAnalysisService
         _openAiClient = openAiClient;
         _logger = logger;
         _deploymentName = settings.DeploymentName;
+        _timeoutSeconds = settings.OpenAiTimeoutSeconds;
     }
 
     public async Task<JokeAnalysisDto> PredictPunchlineAsync(JokeDto joke, CancellationToken cancellationToken = default)
-
     {
-        using var activity = OpenTelemetryConfig.ActivitySource.StartActivity("AI.PredictPunchline");
-        activity?.SetTag("joke.id", joke.Id);
-        activity?.SetTag("joke.category", joke.Category);
-
         var stopwatch = Stopwatch.StartNew();
 
         try
         {
+            // Create a timeout-enforced cancellation token
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            cts.CancelAfter(TimeSpan.FromSeconds(_timeoutSeconds));
+
             var chatClient = _openAiClient.GetChatClient(_deploymentName);
 
             var messages = new ChatMessage[]
@@ -62,33 +56,32 @@ public sealed class AiJesterService : IAnalysisService
                 new SystemChatMessage(SystemPrompt),
                 new UserChatMessage($"Joke setup: \"{joke.Setup}\"")
             };
-            var response = await chatClient.CompleteChatAsync(messages, cancellationToken: cancellationToken);
+
+            var response = await chatClient.CompleteChatAsync(messages, cancellationToken: cts.Token);
 
             // Check for content filter triggering
-
             string aiPunchline;
             if (response.Value.FinishReason == ChatFinishReason.ContentFilter)
             {
-                _logger.LogWarning("Content filter triggered for joke {JokeId}, returning fallback punchline.", joke.Id);
+                stopwatch.Stop();
+                _logger.LogWarning(
+                    "Content filter triggered for joke {JokeId}, Category={Category}, Setup={Setup}, FinishReason={FinishReason}",
+                    joke.Id, joke.Category, joke.Setup, response.Value.FinishReason);
                 aiPunchline = "[The Jester shrugs and delivers a safe, court-approved punchline.]";
             }
             else
             {
                 aiPunchline = response.Value.Content[0].Text.Trim();
             }
+
             stopwatch.Stop();
             var similarityScore = CalculateSimilarity(joke.Punchline, aiPunchline);
             var isTriumph = similarityScore >= 0.55 && response.Value.FinishReason != ChatFinishReason.ContentFilter;
-            OpenTelemetryConfig.JokesAnalyzed.Add(1,
-                new KeyValuePair<string, object?>("category", joke.Category),
-                new KeyValuePair<string, object?>("is_triumph", isTriumph));
-            if (isTriumph)
-            {
-                OpenTelemetryConfig.AiTriumphs.Add(1);
-            }
+
             _logger.LogInformation(
-                "AI predicted punchline for joke {JokeId}: Similarity={Similarity:P1}, IsTriumph={IsTriumph}",
-                joke.Id, similarityScore, isTriumph);
+                "AI predicted punchline for joke {JokeId}: Similarity={Similarity:P1}, IsTriumph={IsTriumph}, LatencyMs={LatencyMs}",
+                joke.Id, similarityScore, isTriumph, stopwatch.ElapsedMilliseconds);
+
             return new JokeAnalysisDto
             {
                 OriginalJoke = joke,
@@ -99,14 +92,43 @@ public sealed class AiJesterService : IAnalysisService
                 LatencyMs = stopwatch.ElapsedMilliseconds
             };
         }
+catch (OperationCanceledException)
+        {
+            stopwatch.Stop();
+            _logger.LogWarning(
+                "AI prediction timeout or cancelled for joke {JokeId} after {Timeout}s (elapsed: {ElapsedMs}ms)",
+                joke.Id, _timeoutSeconds, stopwatch.ElapsedMilliseconds);
+            
+            // Return fallback analysis with low confidence
+            return new JokeAnalysisDto
+            {
+                OriginalJoke = joke,
+                AiPunchline = "[The Jester took too long to respond.]",
+                Confidence = 0.1,
+                IsTriumph = false,
+                SimilarityScore = 0.0,
+                LatencyMs = stopwatch.ElapsedMilliseconds
+            };
+        }
         catch (Exception ex)
         {
             stopwatch.Stop();
-            _logger.LogError(ex, "AI prediction failed for joke {JokeId}", joke.Id);
-            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
-            throw;
+            _logger.LogError(
+                ex,
+                "AI prediction failed for joke {JokeId} with exception {ExceptionType}: {Message}",
+                joke.Id, ex.GetType().Name, ex.Message);
+
+            // Return fallback analysis on error
+            return new JokeAnalysisDto
+            {
+                OriginalJoke = joke,
+                AiPunchline = "[The Jester stumbled and cannot predict.]",
+                Confidence = 0.0,
+                IsTriumph = false,
+                SimilarityScore = 0.0,
+                LatencyMs = stopwatch.ElapsedMilliseconds
+            };
         }
-        throw new InvalidOperationException("Unreachable code in PredictPunchlineAsync");
     }
 
     /// <summary>
@@ -182,60 +204,101 @@ public sealed class AiJesterService : IAnalysisService
 
     public async Task<JokeRatingDto> RateJokeAsync(JokeDto joke, CancellationToken cancellationToken = default)
     {
-        using var activity = OpenTelemetryConfig.ActivitySource.StartActivity("AI.RateJoke");
+        try
+        {
+            // Create a timeout-enforced cancellation token
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            cts.CancelAfter(TimeSpan.FromSeconds(_timeoutSeconds));
 
-        var chatClient = _openAiClient.GetChatClient(_deploymentName);
+            var chatClient = _openAiClient.GetChatClient(_deploymentName);
 
-        var ratingPrompt = """
-            Rate this joke on a scale of 0.0 to 1.0 for:
-            - Originality: How unique and creative is it?
-            - Cleverness: How smart or witty is the wordplay?
-            - Humor: How funny is it overall?
+            var ratingPrompt = """
+                Rate this joke on a scale of 0.0 to 1.0 for:
+                - Originality: How unique and creative is it?
+                - Cleverness: How smart or witty is the wordplay?
+                - Humor: How funny is it overall?
+                
+                Respond in this exact format (just numbers, no text):
+                originality: 0.X
+                cleverness: 0.X
+                humor: 0.X
+                """;
+
+            var messages = new ChatMessage[]
+            {
+                new SystemChatMessage(ratingPrompt),
+                new UserChatMessage($"Joke: \"{joke.Setup}\" -> \"{joke.Punchline}\"")
+            };
+
+            var response = await chatClient.CompleteChatAsync(messages, cancellationToken: cts.Token);
+
+            // Check for content filter triggering
+            if (response.Value.FinishReason == ChatFinishReason.ContentFilter)
+            {
+                _logger.LogWarning(
+                    "Content filter triggered while rating joke {JokeId}, Category={Category}, returning neutral scores",
+                    joke.Id, joke.Category);
+                
+                // Return neutral/average scores if filtered
+                return new JokeRatingDto
+                {
+                    Cleverness = 5,
+                    Complexity = 5,
+                    Difficulty = 5,
+                    Rudeness = 1,
+                    Commentary = "Rated by the Digital Jester's discerning wit. (Filtered)"
+                };
+            }
+
+            var responseText = response.Value.Content[0].Text;
+
+            // Parse scores (simple parsing, convert to 1-10 scale)
+            var cleverness = (int)Math.Round((ExtractScore(responseText, "cleverness") ?? 0.5) * 10);
+            var complexity = (int)Math.Round((ExtractScore(responseText, "originality") ?? 0.5) * 10);
+            var difficulty = (int)Math.Round((ExtractScore(responseText, "humor") ?? 0.5) * 10);
+
+            return new JokeRatingDto
+            {
+                Cleverness = cleverness,
+                Complexity = complexity,
+                Difficulty = difficulty,
+                Rudeness = 1, // Default low rudeness
+                Commentary = "Rated by the Digital Jester's discerning wit."
+            };
+        }
+catch (OperationCanceledException)
+        {
+            _logger.LogWarning(
+                "Joke rating timeout or cancelled for {JokeId} after {Timeout}s",
+                joke.Id, _timeoutSeconds);
             
-            Respond in this exact format (just numbers, no text):
-            originality: 0.X
-            cleverness: 0.X
-            humor: 0.X
-            """;
-
-        var messages = new ChatMessage[]
-        {
-            new SystemChatMessage(ratingPrompt),
-            new UserChatMessage($"Joke: \"{joke.Setup}\" -> \"{joke.Punchline}\"")
-        };
-
-        var response = await chatClient.CompleteChatAsync(messages, cancellationToken: cancellationToken);
-
-        // Check for content filter triggering
-        if (response.Value.FinishReason == ChatFinishReason.ContentFilter)
-        {
-            _logger.LogWarning("Content filter triggered while rating joke {JokeId}, returning neutral scores.", joke.Id);
-            // Return neutral/average scores if filtered
+            // Return neutral ratings on timeout
             return new JokeRatingDto
             {
                 Cleverness = 5,
                 Complexity = 5,
                 Difficulty = 5,
                 Rudeness = 1,
-                Commentary = "Rated by the Digital Jester's discerning wit. (Filtered)"
+                Commentary = "Timed out during rating."
             };
         }
-
-        var responseText = response.Value.Content[0].Text;
-
-        // Parse scores (simple parsing, convert to 1-10 scale)
-        var cleverness = (int)Math.Round((ExtractScore(responseText, "cleverness") ?? 0.5) * 10);
-        var complexity = (int)Math.Round((ExtractScore(responseText, "originality") ?? 0.5) * 10);
-        var difficulty = (int)Math.Round((ExtractScore(responseText, "humor") ?? 0.5) * 10);
-
-        return new JokeRatingDto
+        catch (Exception ex)
         {
-            Cleverness = cleverness,
-            Complexity = complexity,
-            Difficulty = difficulty,
-            Rudeness = 1, // Default low rudeness
-            Commentary = "Rated by the Digital Jester's discerning wit."
-        };
+            _logger.LogError(
+                ex,
+                "Joke rating failed for {JokeId} with exception {ExceptionType}",
+                joke.Id, ex.GetType().Name);
+            
+            // Return neutral ratings on error
+            return new JokeRatingDto
+            {
+                Cleverness = 5,
+                Complexity = 5,
+                Difficulty = 5,
+                Rudeness = 1,
+                Commentary = "Error during rating."
+            };
+        }
     }
 
     private static double? ExtractScore(string text, string key)

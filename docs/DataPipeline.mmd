@@ -1,0 +1,54 @@
+flowchart LR
+    Start(["🎭 Start Cycle"])
+    
+    subgraph Fetch["📥 Fetch Phase"]
+        GetJoke["GET /jokes<br/>(JokeAPI)"]
+        Store1["CREATE<br/>(Joke Entity)"]
+    end
+    
+    subgraph Predict["🤔 Predict Phase"]
+        GetPred["Azure OpenAI<br/>(Analyze)"]
+        Update1["UPDATE<br/>(Prediction)"]
+    end
+    
+    subgraph Rate["⭐ Rate Phase"]
+        GetRate["Azure OpenAI<br/>(Rate Joke)"]
+        Store2["CREATE<br/>(Rating)"]
+    end
+    
+    subgraph Leaderboard["📊 Leaderboard Phase"]
+        Query["READ<br/>(SortBy Score)"]
+        Store3["CREATE<br/>(LeaderboardEntry)"]
+    end
+    
+    subgraph Display["📺 Display Phase"]
+        Read["READ<br/>(Latest Jokes)"]
+        Render["Render UI<br/>(Render)"]
+    end
+    
+    subgraph Cleanup["🧹 Archive Phase"]
+        Archive["UPDATE<br/>(Mark Old)"]
+        Delete["DELETE<br/>(Expired)"]
+    end
+    
+    Start --> GetJoke
+    GetJoke --> Store1
+    Store1 --> GetPred
+    GetPred --> Update1
+    Update1 --> GetRate
+    GetRate --> Store2
+    Store2 --> Query
+    Query --> Store3
+    Store3 --> Read
+    Read --> Render
+    Render --> Archive
+    Archive --> Delete
+    Delete --> Start
+    
+    style Start fill:#1a1a2e,color:#fff,stroke:#000
+    style Fetch fill:#533483,color:#fff,stroke:#6c3b9f
+    style Predict fill:#5c4a8b,color:#fff,stroke:#7d6ba8
+    style Rate fill:#724e9f,color:#fff,stroke:#8b5cb8
+    style Leaderboard fill:#8b5cb8,color:#fff,stroke:#a570d4
+    style Display fill:#b366cc,color:#fff,stroke:#cc99dd
+    style Cleanup fill:#9f6ec4,color:#fff,stroke:#b380d4

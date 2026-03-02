@@ -1,0 +1,108 @@
+flowchart TB
+    App["App.razor<br/>(Root Blazor Component)"]
+    
+    subgraph Frontend["Frontend Components"]
+        Layout["Layout<br/>(MainLayout.razor)"]
+        PageHome["Home Page<br/>(Home.razor)"]
+        PageLeaderboard["Leaderboard Page<br/>(Leaderboard.razor)"]
+        PageDiag["Diagnostics Page<br/>(Diag.razor)"]
+        
+        subgraph JesterComponents["Jester Stage Components"]
+            JesterStage["JesterStage.razor<br/>(Stage Manager)"]
+            JokeCard["JokeCard.razor<br/>(Joke Display)"]
+            Commentary["CommentaryBubble.razor<br/>(AI Commentary)"]
+            SpeechlessJester["SpeechlessJester.razor<br/>(Fallback)"]
+        end
+        
+        subgraph PerfComponents["Performance Components"]
+            PerfDisplay["PerformanceDisplay.razor<br/>(Metrics)"]
+            PerfControls["PerformanceControls.razor<br/>(Settings)"]
+            PerfOrchestrator["PerformanceOrchestrator.cs<br/>(Logic)"]
+        end
+        
+        subgraph UtilComponents["Utility Components"]
+            SafeToggle["SafeModeToggle.razor<br/>(Settings)"]
+            SessionStats["SessionStats.razor<br/>(Stats)"]
+            NetworkAwaiting["NetworkAwaiting.razor<br/>(Loading)"]
+        end
+    end
+    
+    subgraph Backend["Backend Services"]
+        JokeEndpoint["Jokes Endpoint<br/>(GET /jokes)"]
+        AnalysisEndpoint["Analysis Endpoint<br/>(POST /analysis)"]
+        LeaderboardEndpoint["Leaderboard Endpoint<br/>(GET /leaderboards)"]
+        DiagnosticsEndpoint["Diagnostics Endpoint<br/>(GET /diagnostics)"]
+        HealthEndpoint["Health Endpoint<br/>(GET /health)"]
+    end
+    
+    subgraph Services["Core Services"]
+        JokeService["IJokeService<br/>(Joke Fetching)"]
+        AnalysisService["IAnalysisService<br/>(AI Analysis)"]
+        AudioService["IAudioService<br/>(TTS & Sounds)"]
+        SpeechService["ISpeechService<br/>(Voice Synthesis)"]
+        StorageClient["IJokeStorageClient<br/>(Persistence)"]
+    end
+    
+    subgraph ExternalAPIs["External APIs"]
+        JokeAPI["JokeAPI<br/>(Joke Source)"]
+        OpenAI["Azure OpenAI<br/>(GPT-4 Analysis)"]
+        TableStorage["Azure Table Storage<br/>(Data Persistence)"]
+        KeyVault["Azure Key Vault<br/>(Secrets)"]
+    end
+    
+    subgraph Middleware["Middleware & Cross-Cutting"]
+        Resilience["Polly Resilience<br/>(Retries, Timeouts)"]
+        Telemetry["OpenTelemetry<br/>(Metrics, Tracing)"]
+        Logging["Serilog<br/>(Structured Logging)"]
+        HealthChecks["Health Checks<br/>(Dependency Status)"]
+    end
+    
+    App --> Layout
+    Layout --> PageHome
+    Layout --> PageLeaderboard
+    Layout --> PageDiag
+    
+    PageHome --> JesterStage
+    JesterStage --> JokeCard
+    JokeCard --> Commentary
+    JokeCard --> SpeechlessJester
+    PageHome --> PerfDisplay
+    PageHome --> SafeToggle
+    PageHome --> SessionStats
+    PageHome --> NetworkAwaiting
+    PerfDisplay --> PerfOrchestrator
+    PerfControls --> PerfOrchestrator
+    
+    JesterStage --> JokeEndpoint
+    JesterStage --> AnalysisEndpoint
+    PageLeaderboard --> LeaderboardEndpoint
+    PageDiag --> DiagnosticsEndpoint
+    PageDiag --> HealthEndpoint
+    
+    JokeEndpoint --> JokeService
+    AnalysisEndpoint --> AnalysisService
+    JokeCard --> AudioService
+    AnalysisService --> SpeechService
+    StorageClient -.-> LeaderboardEndpoint
+    
+    JokeService --> JokeAPI
+    AnalysisService --> OpenAI
+    StorageClient --> TableStorage
+    StorageClient --> KeyVault
+    JokeService --> Resilience
+    AnalysisService --> Resilience
+    AudioService --> Resilience
+    
+    Services -.-> Telemetry
+    Services -.-> Logging
+    Services -.-> HealthChecks
+    
+    style App fill:#1a1a2e,color:#fff,stroke:#000
+    style Frontend fill:#2d2d5f,color:#fff,stroke:#4a4a8a
+    style JesterComponents fill:#3a3a70,color:#fff,stroke:#5a5a9a
+    style PerfComponents fill:#3a3a70,color:#fff,stroke:#5a5a9a
+    style UtilComponents fill:#3a3a70,color:#fff,stroke:#5a5a9a
+    style Backend fill:#533483,color:#fff,stroke:#6c3b9f
+    style Services fill:#5c4a8b,color:#fff,stroke:#7d6ba8
+    style ExternalAPIs fill:#724e9f,color:#fff,stroke:#8b5cb8
+    style Middleware fill:#8b5cb8,color:#fff,stroke:#a570d4

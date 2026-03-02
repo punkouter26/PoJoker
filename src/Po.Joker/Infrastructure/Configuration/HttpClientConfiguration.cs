@@ -15,12 +15,15 @@ public static class HttpClientConfiguration
     public static IServiceCollection AddPoJokerHttpClients(this IServiceCollection services)
     {
         // Add JokeAPI client with resilience
-        services.AddHttpClient<IJokeApiClient, JokeApiClient>(client =>
+        services.AddHttpClient<JokeApiClient>(client =>
         {
             client.BaseAddress = new Uri("https://v2.jokeapi.dev/");
             client.Timeout = TimeSpan.FromSeconds(10);
         })
         .AddJokeApiResilience();
+
+        // Register IJokeApiClient so MediatR handler can resolve it via the interface
+        services.AddScoped<IJokeApiClient>(sp => sp.GetRequiredService<JokeApiClient>());
 
         // Add named HttpClient for JokeAPI health check
         services.AddHttpClient("JokeApi", client =>

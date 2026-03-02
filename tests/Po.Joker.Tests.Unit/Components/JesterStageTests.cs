@@ -1,7 +1,8 @@
 using Bunit;
 using Microsoft.Extensions.DependencyInjection;
-using Moq;
+using Po.Joker.Application;
 using Po.Joker.Components;
+using Po.Joker.Contracts;
 using Po.Joker.Services;
 using Po.Joker.DTOs;
 using Po.Joker.Enums;
@@ -14,17 +15,12 @@ namespace Po.Joker.Tests.Unit.Components;
 /// </summary>
 public class JesterStageTests : BunitContext
 {
-    private readonly Mock<ISpeechService> _mockSpeechService;
-    private readonly Mock<IAudioService> _mockAudioService;
-
     public JesterStageTests()
     {
-        _mockSpeechService = new Mock<ISpeechService>();
-        _mockAudioService = new Mock<IAudioService>();
-
-        // Register mock services
-        Services.AddSingleton(_mockSpeechService.Object);
-        Services.AddSingleton(_mockAudioService.Object);
+        // Register interface-mapped services required by JesterStage
+        Services.AddScoped<IAudioService, NullAudioService>();
+        Services.AddScoped<ISpeechService, NullSpeechService>();
+        Services.AddOptions<PerformanceSettings>();
     }
 
     [Fact]
@@ -34,7 +30,7 @@ public class JesterStageTests : BunitContext
         var cut = Render<JesterStage>();
 
         // Assert
-        cut.Markup.Should().Contain("Start");
+        cut.Markup.Should().Contain("Begin");
         cut.Find(".jester-stage").Should().NotBeNull();
     }
 

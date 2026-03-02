@@ -2,17 +2,19 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Po.Joker (Server)",
+      "name": "Po.Joker (Debug + Edge)",
       "type": "coreclr",
       "request": "launch",
       "preLaunchTask": "build",
       "program": "${workspaceFolder}/src/Po.Joker/bin/Debug/net10.0/Po.Joker.dll",
       "args": [],
-      "cwd": "${workspaceFolder}/src/Po.Joker",
+      "cwd": "${workspaceFolder}",
       "stopAtEntry": false,
       "serverReadyAction": {
         "action": "openExternally",
-        "pattern": "\\bNow listening on:\\s+(https?://\\S+)"
+        "pattern": "\\bNow listening on:\\s+(https?://\\S+)",
+        "uriFormat": "%s",
+        "killOnServerStop": true
       },
       "env": {
         "ASPNETCORE_ENVIRONMENT": "Development",
@@ -24,14 +26,15 @@
     },
     {
       "name": "Po.Joker (Attach)",
-      "type": "coreclr",
+      "type": "coreclr", 
       "request": "attach"
     }
   ],
   "compounds": [
     {
       "name": "Po.Joker (Full Stack)",
-      "configurations": ["Po.Joker (Server)"]
+      "configurations": ["Po.Joker (Debug + Edge)"],
+      "stopAll": true
     }
   ]
 }

@@ -1,5 +1,3 @@
-using System.Diagnostics;
-using System.Diagnostics.Metrics;
 using Azure.Monitor.OpenTelemetry.Exporter;
 using OpenTelemetry;
 using OpenTelemetry.Metrics;
@@ -10,44 +8,12 @@ namespace Po.Joker.Infrastructure.Telemetry;
 
 /// <summary>
 /// OpenTelemetry configuration for distributed tracing and metrics.
+/// Uses standard AspNetCore and HttpClient instrumentation only.
 /// </summary>
 public static class OpenTelemetryConfig
 {
-    public const string ServiceName = "Po.Joker";
-    public const string ServiceVersion = "1.0.0";
-
-    /// <summary>
-    /// ActivitySource for custom tracing spans.
-    /// </summary>
-    public static readonly ActivitySource ActivitySource = new(ServiceName, ServiceVersion);
-
-    /// <summary>
-    /// Meter for custom metrics.
-    /// </summary>
-    public static readonly Meter Meter = new(ServiceName, ServiceVersion);
-
-    // Custom metrics
-    public static readonly Counter<long> JokesFetched = Meter.CreateCounter<long>(
-        "jokes.fetched",
-        description: "Number of jokes fetched from external API");
-
-    public static readonly Counter<long> JokesAnalyzed = Meter.CreateCounter<long>(
-        "jokes.analyzed",
-        description: "Number of jokes analyzed by AI");
-
-    public static readonly Counter<long> AiTriumphs = Meter.CreateCounter<long>(
-        "ai.triumphs",
-        description: "Number of times AI correctly guessed the punchline");
-
-    public static readonly Histogram<double> AiLatency = Meter.CreateHistogram<double>(
-        "ai.latency.ms",
-        unit: "ms",
-        description: "AI punchline prediction latency in milliseconds");
-
-    public static readonly Histogram<double> JokeApiLatency = Meter.CreateHistogram<double>(
-        "jokeapi.latency.ms",
-        unit: "ms",
-        description: "JokeAPI request latency in milliseconds");
+    private const string ServiceName = "Po.Joker";
+    private const string ServiceVersion = "1.0.0";
 
     /// <summary>
     /// Configures OpenTelemetry for the application.
@@ -57,7 +23,13 @@ public static class OpenTelemetryConfig
         IConfiguration configuration,
         IHostEnvironment environment)
     {
-        var appInsightsConnectionString = configuration["ApplicationInsights:ConnectionString"];
+        var appInsightsConnectionString = configuration["ApplicationInsights:ConnectionString"]
+            ?? Environment.GetEnvironmentVariable("APPLICATIONINSIGHTS_CONNECTION_STRING");
+
+        if (!environment.IsDevelopment() && string.IsNullOrWhiteSpace(appInsightsConnectionString))
+        {
+            throw new InvalidOperationException("Application Insights connection string is required outside Development.");
+        }
 
         services.AddOpenTelemetry()
             .ConfigureResource(resource => resource
@@ -65,11 +37,9 @@ public static class OpenTelemetryConfig
             .WithTracing(tracing =>
             {
                 tracing
-                    .AddSource(ServiceName)
                     .AddAspNetCoreInstrumentation()
                     .AddHttpClientInstrumentation();
 
-                // Only enable console exporter in Development to avoid verbose metric dumps in production
                 if (environment.IsDevelopment())
                 {
                     tracing.AddConsoleExporter();
@@ -86,11 +56,9 @@ public static class OpenTelemetryConfig
             .WithMetrics(metrics =>
             {
                 metrics
-                    .AddMeter(ServiceName)
                     .AddAspNetCoreInstrumentation()
                     .AddHttpClientInstrumentation();
 
-                // Only enable console exporter in Development to avoid verbose metric dumps in production
                 if (environment.IsDevelopment())
                 {
                     metrics.AddConsoleExporter();
@@ -108,3 +76,5 @@ public static class OpenTelemetryConfig
         return services;
     }
 }
+
+

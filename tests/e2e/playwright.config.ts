@@ -10,7 +10,9 @@ export default defineConfig({
   timeout: 30000,
   
   use: {
-    baseURL: process.env.BASE_URL || 'http://localhost:5123',
+    baseURL: process.env.BASE_URL || 'https://localhost:5001',
+    headless: true,
+    ignoreHTTPSErrors: true,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },
@@ -23,9 +25,14 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: 'dotnet run --project ../../src/Po.Joker/Po.Joker.csproj --configuration Release --urls http://localhost:5123',
-    url: 'http://localhost:5123',
-    reuseExistingServer: !process.env.CI,
+    command: 'dotnet run --project ../../src/Po.Joker/Po.Joker.csproj --urls https://localhost:5001 --environment Development',
+    url: 'https://localhost:5001/health',
+    reuseExistingServer: true,
+    ignoreHTTPSErrors: true,
     timeout: 120000,
+    env: {
+      POJOKER_USE_MOCK_AI: 'true',
+      POJOKER_DISABLE_KEYVAULT: 'true',
+    },
   },
 });

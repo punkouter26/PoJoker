@@ -1,5 +1,5 @@
 using FluentAssertions;
-using Po.Joker.Features.Diagnostics;
+using Po.Joker.DTOs;
 
 namespace Po.Joker.Tests.Unit.Features;
 

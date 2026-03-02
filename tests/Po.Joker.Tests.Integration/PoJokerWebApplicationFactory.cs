@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging;
 using Po.Joker.Features.Analysis;
 using Po.Joker.Features.Jokes;
 using Po.Joker.Contracts;
@@ -54,7 +55,7 @@ public class PoJokerWebApplicationFactory : WebApplicationFactory<Program>
             }
             services.AddSingleton<IAnalysisService, MockAnalysisService>();
 
-            // Remove real JokeApiClient and replace with mock to eliminate external HTTP calls
+            // Replace IJokeApiClient with a deterministic mock — eliminates all external HTTP calls to JokeAPI
             services.RemoveAll<IJokeApiClient>();
             services.AddSingleton<IJokeApiClient, MockJokeApiClient>();
 
@@ -79,8 +80,8 @@ public class PoJokerWebApplicationFactory : WebApplicationFactory<Program>
 }
 
 /// <summary>
-/// Mock JokeApiClient that returns deterministic jokes without external HTTP calls.
-/// Eliminates network dependency on v2.jokeapi.dev and improves test speed/reliability.
+/// Mock implementation of IJokeApiClient — returns deterministic jokes without any external HTTP calls.
+/// Implements the interface directly to guarantee the mock is always resolved by DI.
 /// </summary>
 internal sealed class MockJokeApiClient : IJokeApiClient
 {
@@ -88,33 +89,10 @@ internal sealed class MockJokeApiClient : IJokeApiClient
 
     private static readonly JokeDto[] MockJokes =
     [
-        new()
-        {
-            Id = 1,
-            Category = "Programming",
-            Type = "twopart",
-            Setup = "Why do programmers prefer dark mode?",
-            Punchline = "Because light attracts bugs!",
-            SafeMode = true
-        },
-        new()
-        {
-            Id = 2,
-            Category = "Pun",
-            Type = "twopart",
-            Setup = "What do you call a fake noodle?",
-            Punchline = "An impasta!",
-            SafeMode = true
-        },
-        new()
-        {
-            Id = 3,
-            Category = "Misc",
-            Type = "twopart",
-            Setup = "Why don't scientists trust atoms?",
-            Punchline = "Because they make up everything!",
-            SafeMode = true
-        }
+        new() { Id = 10, Category = "Programming", Type = "twopart", Setup = "Why do programmers prefer dark mode?",   Punchline = "Because light attracts bugs!",          SafeMode = true },
+        new() { Id = 20, Category = "Pun",         Type = "twopart", Setup = "What do you call a fake noodle?",       Punchline = "An impasta!",                           SafeMode = true },
+        new() { Id = 30, Category = "Misc",        Type = "twopart", Setup = "Why don't scientists trust atoms?",     Punchline = "Because they make up everything!",      SafeMode = true },
+        new() { Id = 40, Category = "Dark",        Type = "twopart", Setup = "What is a skeleton's least fav room?",  Punchline = "The living room.",                      SafeMode = false },
     ];
 
     public Task<JokeDto> FetchJokeAsync(
@@ -122,8 +100,15 @@ internal sealed class MockJokeApiClient : IJokeApiClient
         IEnumerable<int>? excludeIds = null,
         CancellationToken cancellationToken = default)
     {
-        var index = Interlocked.Increment(ref _callCount) % MockJokes.Length;
-        var joke = MockJokes[index] with { SafeMode = safeMode };
-        return Task.FromResult(joke);
+        var excluded = excludeIds?.ToHashSet() ?? [];
+        var available = MockJokes.Where(j => !excluded.Contains(j.Id)).ToList();
+        if (available.Count == 0)
+            available = MockJokes.ToList(); // fallback: ignore exclusions if all excluded
+
+        var index = Math.Abs(Interlocked.Increment(ref _callCount)) % available.Count;
+        return Task.FromResult(available[index] with { SafeMode = safeMode });
     }
+
+    public Task<IReadOnlyList<string>> GetCategoriesAsync(CancellationToken cancellationToken = default)
+        => Task.FromResult<IReadOnlyList<string>>(["Programming", "Pun", "Misc", "Dark"]);
 }

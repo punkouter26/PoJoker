@@ -1,8 +1,10 @@
 @using System.Net.Http.Json
+@using Microsoft.Extensions.Options
 @inject HttpClient Http
 @inject ISpeechService SpeechService
 @inject IAudioService AudioService
-@implements IDisposable
+@inject IOptions<PerformanceSettings> PerformanceSettingsOptions
+@implements IAsyncDisposable
 
 <SpeechlessJester 
     IsVisible="@_orchestrator.ShowSpeechlessOverlay" 
@@ -22,32 +24,31 @@
 
 <div class="jester-stage">
     <div class="stage-header">
-        <h2>Performance</h2>
-        <SessionStats Triumphs="@_orchestrator.SessionTriumphs" Defeats="@_orchestrator.SessionDefeats" />
+        <h2>🎭 The Digital Jester</h2>
     </div>
 
     <PerformanceDisplay 
         CurrentState="@_orchestrator.CurrentState"
         CurrentJoke="@_orchestrator.CurrentJoke"
-        CurrentAnalysis="@_orchestrator.CurrentAnalysis" />
+        CurrentAnalysis="@_orchestrator.CurrentAnalysis"
+        JokesDisplayed="@_orchestrator.JokesDisplayed"
+        TopJokes="@_orchestrator.TopJokes"
+        SessionTriumphs="@_orchestrator.SessionTriumphs" />
 
     <PerformanceControls 
         IsRunning="@_orchestrator.IsRunning"
-        SafeModeEnabled="@_orchestrator.SafeModeEnabled"
-        AudioEnabled="@_orchestrator.AudioEnabled"
         OnStart="@StartPerformance"
-        OnStop="@StopPerformance"
-        OnSafeModeChanged="@HandleSafeModeChanged"
-        OnAudioChanged="@HandleAudioChanged" />
+        OnStop="@StopPerformance" />
 </div>
 
 @code {
     private PerformanceOrchestrator _orchestrator = null!;
 
-    protected override void OnInitialized()
+    protected override Task OnInitializedAsync()
     {
-        _orchestrator = new PerformanceOrchestrator(Http, SpeechService, AudioService);
+        _orchestrator = new PerformanceOrchestrator(Http, SpeechService, AudioService, PerformanceSettingsOptions.Value);
         _orchestrator.StateChanged += OnStateChanged;
+        return Task.CompletedTask;
     }
 
     private async Task StartPerformance()
@@ -60,29 +61,17 @@
         await _orchestrator.StopAsync();
     }
 
-    private async Task HandleSafeModeChanged(bool enabled)
-    {
-        _orchestrator.SafeModeEnabled = enabled;
-        await Task.CompletedTask;
-    }
-
-    private async Task HandleAudioChanged(bool enabled)
-    {
-        _orchestrator.AudioEnabled = enabled;
-        await Task.CompletedTask;
-    }
-
     private void OnStateChanged()
     {
         InvokeAsync(StateHasChanged);
     }
 
-    public void Dispose()
+    async ValueTask IAsyncDisposable.DisposeAsync()
     {
         if (_orchestrator != null)
         {
             _orchestrator.StateChanged -= OnStateChanged;
-            _orchestrator.Dispose();
+            await _orchestrator.DisposeAsync();
         }
     }
 }

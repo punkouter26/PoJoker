@@ -1,4 +1,5 @@
 using Microsoft.JSInterop;
+using Po.Joker.Contracts;
 
 namespace Po.Joker.Services;
 
@@ -6,45 +7,10 @@ namespace Po.Joker.Services;
 /// Service for text-to-speech functionality using Web Speech API.
 /// Provides a British male voice jester character for narration (FR-016).
 /// </summary>
-public interface ISpeechService
+public class SpeechService(IJSRuntime jsRuntime, ILogger<SpeechService> logger) : ISpeechService
 {
-    /// <summary>
-    /// Speak text with the jester voice.
-    /// </summary>
-    /// <param name="text">The text to speak.</param>
-    /// <param name="rate">Speech rate (0.1 to 10, default 1.0).</param>
-    /// <param name="pitch">Voice pitch (0 to 2, default 1.0).</param>
-    Task SpeakAsync(string text, double rate = 1.0, double pitch = 1.0);
-
-    /// <summary>
-    /// Stop any ongoing speech.
-    /// </summary>
-    Task StopAsync();
-
-    /// <summary>
-    /// Check if speech synthesis is supported.
-    /// </summary>
-    Task<bool> IsSupportedAsync();
-
-    /// <summary>
-    /// Check if currently speaking.
-    /// </summary>
-    Task<bool> IsSpeakingAsync();
-}
-
-/// <summary>
-/// Implementation of ISpeechService using JavaScript interop.
-/// </summary>
-public sealed class SpeechService : ISpeechService
-{
-    private readonly IJSRuntime _jsRuntime;
-    private readonly ILogger<SpeechService> _logger;
-
-    public SpeechService(IJSRuntime jsRuntime, ILogger<SpeechService> logger)
-    {
-        _jsRuntime = jsRuntime;
-        _logger = logger;
-    }
+    private readonly IJSRuntime _jsRuntime = jsRuntime;
+    private readonly ILogger<SpeechService> _logger = logger;
 
     public async Task SpeakAsync(string text, double rate = 1.0, double pitch = 1.0)
     {

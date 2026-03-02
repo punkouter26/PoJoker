@@ -151,3 +151,16 @@ nul
 # Local tooling/config
 .claude/
 
+# Azurite instance config
+AzuriteConfig
+
+# Runtime log files
+*.log
+logs/
+
+# Playwright MCP session files
+.playwright-mcp/
+
+# Agent state files
+.potune-state.json
+

@@ -1,104 +1,76 @@
 @page "/diag"
 @inject HttpClient Http
-@inject IHostEnvironment Environment
+@using Po.Joker.DTOs
 
 <PageTitle>Diagnostics - PoJoker</PageTitle>
 
 <div class="diag-container">
     <div class="diag-header">
-        <h1>🔧 Royal Court Diagnostics</h1>
-        <p class="diag-subtitle">Health status of the Jester's domain</p>
+        <h1>🔧 Service Health</h1>
+        <p class="diag-subtitle">Live connectivity status for all app dependencies</p>
     </div>
 
     @if (_isLoading)
     {
         <div class="loading-state">
             <div class="loading-spinner"></div>
-            <p>Inspecting the kingdom's infrastructure...</p>
+            <p>Checking connections...</p>
         </div>
     }
     else if (_diagnostics is not null)
     {
         <div class="diag-overview">
-            <div class="status-badge @GetOverallStatusClass()">
-                <span class="status-icon">@GetOverallStatusIcon()</span>
+            <div class="overall-status @GetOverallStatusClass(_diagnostics.Status)">
+                <span class="status-dot"></span>
                 <span class="status-text">@_diagnostics.Status</span>
             </div>
-            <div class="overview-stats">
-                <div class="stat-item">
-                    <span class="stat-label">Environment</span>
-                    <span class="stat-value">@_diagnostics.Environment</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">Version</span>
-                    <span class="stat-value">@_diagnostics.Version</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">Uptime</span>
-                    <span class="stat-value">@FormatUptime(_diagnostics.Uptime)</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">Last Check</span>
-                    <span class="stat-value">@_diagnostics.Timestamp.ToString("HH:mm:ss")</span>
-                </div>
+            <div class="overview-meta">
+                <span>@_diagnostics.Environment</span>
+                <span>Up @FormatUptime(_diagnostics.Uptime)</span>
+                <span>@_diagnostics.Timestamp.ToLocalTime().ToString("HH:mm:ss")</span>
             </div>
         </div>
 
-        <div class="tts-health-section" style="margin-bottom:2rem;">
-            <h2>🗣️ Text-to-Speech Health Check</h2>
-            <span class="tts-result">TTS health check is only available in the client app.</span>
-        </div>
-
-        <div class="services-section">
-            <h2>🏰 Kingdom Services</h2>
-            <div class="services-grid">
-                @foreach (var service in _diagnostics.Services)
-                {
-                    <div class="service-card @GetServiceStatusClass(service.Status)">
-                        <div class="service-header">
-                            <span class="service-icon">@GetServiceIcon(service.Name)</span>
-                            <span class="service-name">@service.Name</span>
-                        </div>
-                        <div class="service-status">
-                            <span class="status-indicator @GetServiceStatusClass(service.Status)"></span>
-                            <span>@service.Status</span>
-                        </div>
-                        <div class="service-details">
-                            <span class="response-time">⏱️ @service.ResponseTimeMs ms</span>
-                            @if (!string.IsNullOrEmpty(service.Message))
-                            {
-                                <span class="service-message">@service.Message</span>
-                            }
-                        </div>
+        <div class="services-grid">
+            @foreach (var svc in _diagnostics.Services)
+            {
+                <div class="service-card @GetStatusClass(svc.Status)">
+                    <div class="service-icon">@GetServiceIcon(svc.Name)</div>
+                    <div class="service-info">
+                        <div class="service-name">@svc.Name</div>
+                        <div class="service-status">@svc.Status</div>
+                        @if (svc.ResponseTimeMs > 0)
+                        {
+                            <div class="service-latency">@svc.ResponseTimeMs ms</div>
+                        }
+                        @if (!string.IsNullOrEmpty(svc.Message))
+                        {
+                            <div class="service-message">@svc.Message</div>
+                        }
                     </div>
-                }
-            </div>
+                    <div class="service-indicator"></div>
+                </div>
+            }
         </div>
 
-        <div class="metrics-section">
-            <h2>📊 Performance Metrics</h2>
-            <div class="metrics-grid">
-                <div class="metric-card">
-                    <span class="metric-icon">🎭</span>
-                    <span class="metric-value">@_diagnostics.TotalJokesServed</span>
-                    <span class="metric-label">Jokes Served</span>
-                </div>
-                <div class="metric-card">
-                    <span class="metric-icon">🧠</span>
-                    <span class="metric-value">@_diagnostics.TotalAnalyses</span>
-                    <span class="metric-label">AI Analyses</span>
-                </div>
-                <div class="metric-card">
-                    <span class="metric-icon">🏆</span>
-                    <span class="metric-value">@_diagnostics.TriumphRate.ToString("P0")</span>
-                    <span class="metric-label">Triumph Rate</span>
-                </div>
+        <div class="stats-row">
+            <div class="stat-chip">
+                <span class="stat-num">@_diagnostics.TotalJokesServed</span>
+                <span class="stat-lbl">Jokes Served</span>
+            </div>
+            <div class="stat-chip">
+                <span class="stat-num">@_diagnostics.TotalAnalyses</span>
+                <span class="stat-lbl">AI Analyses</span>
+            </div>
+            <div class="stat-chip">
+                <span class="stat-num">@(_diagnostics.TriumphRate.ToString("P0"))</span>
+                <span class="stat-lbl">Triumph Rate</span>
             </div>
         </div>
 
         <div class="actions-section">
             <button class="refresh-button" @onclick="RefreshDiagnostics">
-                🔄 Refresh Status
+                🔄 Refresh
             </button>
         </div>
     }
@@ -116,7 +88,6 @@
     private DiagnosticsDto? _diagnostics;
     private bool _isLoading = true;
     private string? _error;
-    // TTS health check is only available in the client app.
 
     protected override async Task OnInitializedAsync()
     {
@@ -131,7 +102,7 @@
 
         try
         {
-            _diagnostics = await Http.GetFromJsonAsync<DiagnosticsDto>("/api/diagnostics");
+            _diagnostics = await Http.GetFromJsonAsync<DiagnosticsDto>("/api/diagnostics/");
         }
         catch (Exception ex)
         {
@@ -143,57 +114,34 @@
         }
     }
 
-    private string GetOverallStatusClass()
+    private static string GetStatusClass(HealthStatus status) => status switch
     {
-        return _diagnostics?.Status switch
-        {
-            HealthStatus.Healthy => "status-healthy",
-            HealthStatus.Degraded => "status-degraded",
-            HealthStatus.Unhealthy => "status-unhealthy",
-            _ => "status-unknown"
-        };
-    }
+        HealthStatus.Healthy   => "status-healthy",
+        HealthStatus.Degraded  => "status-degraded",
+        HealthStatus.Unhealthy => "status-unhealthy",
+        _                      => "status-unhealthy"
+    };
 
-    private string GetOverallStatusIcon()
+    private static string GetOverallStatusClass(HealthStatus status) => status switch
     {
-        return _diagnostics?.Status switch
-        {
-            HealthStatus.Healthy => "✅",
-            HealthStatus.Degraded => "⚠️",
-            HealthStatus.Unhealthy => "❌",
-            _ => "❓"
-        };
-    }
+        HealthStatus.Healthy   => "overall-healthy",
+        HealthStatus.Degraded  => "overall-degraded",
+        HealthStatus.Unhealthy => "overall-unhealthy",
+        _                      => "overall-unhealthy"
+    };
 
-    private string GetServiceStatusClass(HealthStatus status)
+    private static string GetServiceIcon(string name) => name.ToLowerInvariant() switch
     {
-        return status switch
-        {
-            HealthStatus.Healthy => "status-healthy",
-            HealthStatus.Degraded => "status-degraded",
-            HealthStatus.Unhealthy => "status-unhealthy",
-            _ => "status-unknown"
-        };
-    }
-
-    private string GetServiceIcon(string serviceName)
-    {
-        return serviceName.ToLowerInvariant() switch
-        {
-            "jokeapi" => "🃏",
-            "azureopenai" => "🧠",
-            "tablestorage" => "📦",
-            "keyvault" => "🔐",
-            _ => "🔌"
-        };
-    }
+        var n when n.Contains("openai") || n.Contains("ai") => "🤖",
+        var n when n.Contains("joke")                       => "🎭",
+        var n when n.Contains("storage") || n.Contains("table") => "🗄️",
+        _ => "🔌"
+    };
 
     private static string FormatUptime(TimeSpan uptime)
     {
-        if (uptime.TotalDays >= 1)
-            return $"{(int)uptime.TotalDays}d {uptime.Hours}h";
-        if (uptime.TotalHours >= 1)
-            return $"{(int)uptime.TotalHours}h {uptime.Minutes}m";
+        if (uptime.TotalDays >= 1)  return $"{(int)uptime.TotalDays}d {uptime.Hours}h";
+        if (uptime.TotalHours >= 1) return $"{(int)uptime.TotalHours}h {uptime.Minutes}m";
         return $"{uptime.Minutes}m {uptime.Seconds}s";
     }
 }

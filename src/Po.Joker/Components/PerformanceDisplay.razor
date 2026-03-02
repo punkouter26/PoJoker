@@ -1,25 +1,38 @@
 
-@* Performance Display Component - Shows current state *@
+@* Performance Display Component - Shows current state with progress counter *@
 <div class="stage-content">
+    @{
+        var progressPercent = JokesDisplayed > 0 ? (JokesDisplayed / 10.0) * 100 : 0;
+    }
+
     @switch (CurrentState)
     {
         case PerformanceState.Idle:
             <div class="idle-message">
-                <p>Ready to start.</p>
-                <p class="subtitle">Press start to fetch a joke.</p>
+                <p>🎭 The Digital Jester Awaits</p>
+                <p class="subtitle">An AI Comedy Experience</p>
+                <p class="hint">Press Begin to watch 10 hilarious performances</p>
             </div>
             break;
 
         case PerformanceState.Fetching:
+                <div class="progress-bar">
+                <div class="progress-fill" style="width: @(progressPercent)%"></div>
+                <span class="progress-text">Joke @JokesDisplayed of 10</span>
+            </div>
             <div class="loading-state">
                 <div class="loading-jester"></div>
-                <p>Fetching...</p>
+                <p>Summoning the Digital Jester...</p>
             </div>
             break;
 
         case PerformanceState.ShowingSetup:
         case PerformanceState.ShowingAiGuess:
         case PerformanceState.RevealingPunchline:
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: @(progressPercent)%"></div>
+                <span class="progress-text">Joke @JokesDisplayed of 10</span>
+            </div>
             @if (CurrentJoke is not null)
             {
                 <JokeCard Joke="@CurrentJoke"
@@ -29,6 +42,13 @@
                           AiGuess="@(CurrentState >= PerformanceState.ShowingAiGuess ? CurrentAnalysis?.AiPunchline : null)"
                           IsTriumph="@(CurrentState >= PerformanceState.RevealingPunchline ? CurrentAnalysis?.IsTriumph : null)"
                           ShowResult="@(CurrentState >= PerformanceState.RevealingPunchline)" />
+
+                @if (CurrentState == PerformanceState.ShowingAiGuess && CurrentAnalysis?.IsTriumph == null)
+                {
+                    <div class="reveal-hint">
+                        <p class="pulse-text">→ Ready to see the answer?</p>
+                    </div>
+                }
 
                 @if (CurrentState >= PerformanceState.RevealingPunchline && CurrentAnalysis?.Rating is not null)
                 {
@@ -42,9 +62,56 @@
             break;
 
         case PerformanceState.Transitioning:
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: @(progressPercent)%"></div>
+                <span class="progress-text">Joke @JokesDisplayed of 10</span>
+            </div>
             <div class="transition-state">
                 <div class="loading-dots"><span></span><span></span><span></span></div>
-                <p>Next joke incoming...</p>
+                <p>Next performance incoming...</p>
+            </div>
+            break;
+
+        case PerformanceState.Complete:
+            <div class="completion-screen">
+                <h2>🎭 Show Complete!</h2>
+                
+                <div class="completion-stats">
+                    <div class="stat">
+                        <span class="stat-label">Triumphs</span>
+                        <span class="stat-value">@SessionTriumphs</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Success Rate</span>
+                        <span class="stat-value">@Math.Round(SessionTriumphs * 100.0 / 10.0, 0)%</span>
+                    </div>
+                </div>
+
+                @if (TopJokes.Count > 0)
+                {
+                    var bestJoke = TopJokes
+                        .Where(j => j.IsTriumph == true)
+                        .OrderByDescending(j => j.Rating?.Cleverness ?? 0)
+                        .FirstOrDefault() ?? TopJokes.OrderByDescending(j => j.Rating?.Cleverness ?? 0).First();
+
+                    <div class="best-joke-display">
+                        <h3>🏆 Best Performer</h3>
+                        @if (bestJoke.OriginalJoke is not null)
+                        {
+                            <p class="joke-text"><strong>Setup:</strong> @bestJoke.OriginalJoke.Setup</p>
+                            <p class="joke-answer"><strong>Punchline:</strong> @bestJoke.OriginalJoke.Punchline</p>
+                            @if (bestJoke.Rating is not null)
+                            {
+                                <p class="joke-score">Cleverness: @bestJoke.Rating.Cleverness.ToString("F1")/10</p>
+                            }
+                        }
+                    </div>
+                }
+
+                <div class="completion-actions">
+                    <p class="demo-end">Want another show?</p>
+                    <a href="/" class="btn btn-primary">Again! ▶️</a>
+                </div>
             </div>
             break;
     }
@@ -59,4 +126,13 @@
 
     [Parameter]
     public JokeAnalysisDto? CurrentAnalysis { get; set; }
+
+    [Parameter]
+    public int JokesDisplayed { get; set; } = 0;
+
+    [Parameter]
+    public List<JokeAnalysisDto> TopJokes { get; set; } = [];
+
+    [Parameter]
+    public int SessionTriumphs { get; set; } = 0;
 }

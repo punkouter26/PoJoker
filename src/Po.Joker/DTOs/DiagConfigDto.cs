@@ -1,7 +1,6 @@
-using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Po.Joker.Features.Diagnostics;
+namespace Po.Joker.DTOs;
 
 /// <summary>
 /// DTO representing a single configuration entry with masked value for security.

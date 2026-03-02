@@ -8,10 +8,10 @@ namespace Po.Joker.Features.Jokes;
 /// HTTP client for fetching jokes from JokeAPI.dev
 /// Supports safe mode filtering and duplicate exclusion.
 /// </summary>
-public sealed class JokeApiClient : IJokeApiClient
+public class JokeApiClient(HttpClient httpClient, ILogger<JokeApiClient> logger) : IJokeApiClient
 {
-    private readonly HttpClient _httpClient;
-    private readonly ILogger<JokeApiClient> _logger;
+    private readonly HttpClient _httpClient = httpClient;
+    private readonly ILogger<JokeApiClient> _logger = logger;
     private const string BaseUrl = "https://v2.jokeapi.dev/joke";
 
     private static readonly JsonSerializerOptions JsonOptions = new()
@@ -19,12 +19,6 @@ public sealed class JokeApiClient : IJokeApiClient
         PropertyNameCaseInsensitive = true,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
-
-    public JokeApiClient(HttpClient httpClient, ILogger<JokeApiClient> logger)
-    {
-        _httpClient = httpClient;
-        _logger = logger;
-    }
 
     public async Task<JokeDto> FetchJokeAsync(
         bool safeMode = true,

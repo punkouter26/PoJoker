@@ -1,0 +1,19 @@
+C4Context
+    title Po.Joker System Context - Azure Deployment Topology
+    
+    Container_Ext(browser, "Web Browser", "HTTP/HTTPS", "User accesses Po.Joker")
+    System_Boundary(azure, "Azure Cloud") {
+        Container(app, "Po.Joker Blazor Web App", ".NET 10", "Server-side Blazor application generating comedy show")
+        Container(openai, "Azure OpenAI", "GPT-4.1-nano", "AI punchline prediction and joke rating")
+        Container(storage, "Azure Table Storage", "Azurite/Managed", "Persists joke history and leaderboards")
+        Container(keyvault, "Azure Key Vault", "Secrets", "Stores API keys and connection strings")
+    }
+    System_Ext(jokeapi, "JokeAPI", "REST API", "Fetches multi-part jokes")
+    
+    Rel(browser, app, "Renders UI", "WebSocket/HTTP")
+    Rel(app, openai, "Analyzes jokes", "HTTPS")
+    Rel(app, storage, "CRUD operations", "Managed Identity")
+    Rel(app, keyvault, "Retrieves secrets", "Managed Identity")
+    Rel(app, jokeapi, "Fetches jokes", "HTTPS")
+    
+    UpdateLayoutConfig(c4BoundaryInternalMargin=10, c4BoundaryMargin=15)

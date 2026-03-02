@@ -14,7 +14,7 @@ public class FetchJokeTests
 
     public FetchJokeTests()
     {
-        _mockJokeApiClient = new Mock<IJokeApiClient>();
+        _mockJokeApiClient = new Mock<IJokeApiClient>(MockBehavior.Strict);
         _mockLogger = new Mock<ILogger<FetchJokeHandler>>();
     }
 

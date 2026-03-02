@@ -1,7 +1,5 @@
-using System.Diagnostics;
 using MediatR;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
-using Po.Joker.Infrastructure.Telemetry;
 using Po.Joker.DTOs;
 
 namespace Po.Joker.Features.Diagnostics;
@@ -28,9 +26,7 @@ public sealed class GetDiagnosticsHandler : IRequestHandler<GetDiagnosticsQuery,
 
     public async Task<DiagnosticsDto> Handle(GetDiagnosticsQuery request, CancellationToken cancellationToken)
     {
-        using var activity = OpenTelemetryConfig.ActivitySource.StartActivity("Diagnostics.GetHealth");
-
-        var stopwatch = Stopwatch.StartNew();
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
         var healthReport = await _healthCheckService.CheckHealthAsync(cancellationToken);
         stopwatch.Stop();
 

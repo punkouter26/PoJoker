@@ -1,0 +1,36 @@
+erDiagram
+    JOKE ||--o{ PERFORMANCE_SCORE : receives
+    JOKE ||--o{ LEADERBOARD_ENTRY : contains
+    JOKE {
+        string JokeId PK
+        int ApiId
+        string Category
+        string Setup
+        string Delivery
+        string TraditionalPunchline
+        string PredictedPunchline
+        float PredictionConfidence
+        int FetchedTimestamp
+        string SafeMode
+    }
+    
+    PERFORMANCE_SCORE {
+        string ScoreId PK
+        string JokeId FK
+        int Cleverness "0-10"
+        int Rudeness "0-10"
+        int Complexity "0-10"
+        int Difficulty "0-10"
+        string Commentary
+        int RatedTimestamp
+    }
+    
+    LEADERBOARD_ENTRY {
+        string EntryId PK
+        string JokeId FK
+        string Category
+        string RatingDimension
+        float Score
+        int Rank
+        int CreatedTimestamp
+    }

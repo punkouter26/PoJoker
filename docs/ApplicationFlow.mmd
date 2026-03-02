@@ -1,0 +1,71 @@
+flowchart TB
+    Start([User Opens Browser<br/>http://localhost:5123])
+    
+    Home["✨ Home Page<br/>(JesterStage)"]
+    
+    FetchJoke["🎭 Fetch Joke<br/>from JokeAPI"]
+    DisplaySetup["📜 Display Setup<br/>(First part of joke)"]
+    
+    DramaWait["⏳ Drama Pause<br/>(Suspense)"]
+    
+    PredictFlow["🤔 AI Predicts Punchline<br/>(Azure OpenAI)"]
+    DisplayPrediction["💭 Show Prediction<br/>(with confidence)"]
+    
+    RevealFlow["🎉 Reveal True Punchline<br/>(JokeAPI data)"]
+    PlayAudio["🎙️ Text-to-Speech<br/>(British voice narration)"]
+    PlaySound["🎵 Audio Effects<br/>(drums/trombone)"]
+    
+    RateFlow["⭐ AI Rates Joke<br/>(5 dimensions)"]
+    DisplayRating["📊 Show Rating<br/>(Cleverness, Rudeness, etc)"]
+    
+    StoreJoke["💾 Store to Leaderboard<br/>(Azure Table Storage)"]
+    
+    Navigation["🗺️ Navigation Menu<br/>Home | Leaderboard | Diagnostics"]
+    
+    Leaderboard["📋 Leaderboard Page<br/>(Browse joke history)"]
+    Diagnostics["🏥 Diagnostics Page<br/>(Health checks)"]
+    
+    Loop["↩️ Loop to Next Joke<br/>(Autonomous cycle)"]
+    
+    Start --> Home
+    Home --> Navigation
+    Navigation -->|Click Home| FetchJoke
+    Navigation -->|Click Leaderboard| Leaderboard
+    Navigation -->|Click Diagnostics| Diagnostics
+    
+    FetchJoke --> DisplaySetup
+    DisplaySetup --> DramaWait
+    DramaWait --> PredictFlow
+    PredictFlow --> DisplayPrediction
+    DisplayPrediction --> RevealFlow
+    RevealFlow --> PlayAudio
+    PlayAudio --> PlaySound
+    PlaySound --> RateFlow
+    RateFlow --> DisplayRating
+    DisplayRating --> StoreJoke
+    StoreJoke --> Loop
+    Loop --> FetchJoke
+    
+    Leaderboard -->|Sort/Filter| Leaderboard
+    Leaderboard -->|Back| Home
+    
+    Diagnostics -->|Check Status| Diagnostics
+    Diagnostics -->|Back| Home
+    
+    style Start fill:#1a1a2e,color:#fff,stroke:#16213e
+    style Home fill:#0f3460,color:#fff,stroke:#16213e
+    style FetchJoke fill:#533483,color:#fff,stroke:#6c3b9f
+    style DisplaySetup fill:#4a2c6b,color:#fff,stroke:#6c3b9f
+    style DramaWait fill:#6c3b9f,color:#fff,stroke:#8b5cb8
+    style PredictFlow fill:#5c4a8b,color:#fff,stroke:#7d6ba8
+    style DisplayPrediction fill:#724e9f,color:#fff,stroke:#8b5cb8
+    style RevealFlow fill:#8b5cb8,color:#fff,stroke:#a570d4
+    style PlayAudio fill:#9f6ec4,color:#fff,stroke:#b380d4
+    style PlaySound fill:#b380d4,color:#fff,stroke:#c594e0
+    style RateFlow fill:#c594e0,color:#000,stroke:#d4a8ec
+    style DisplayRating fill:#d4a8ec,color:#000,stroke:#e0bbf0
+    style StoreJoke fill:#b366cc,color:#fff,stroke:#cc99dd
+    style Navigation fill:#1a5c6e,color:#fff,stroke:#2a7a8a
+    style Leaderboard fill:#2a7a8a,color:#fff,stroke:#3a96a6
+    style Diagnostics fill:#2a7a8a,color:#fff,stroke:#3a96a6
+    style Loop fill:#8b5cb8,color:#fff,stroke:#a570d4

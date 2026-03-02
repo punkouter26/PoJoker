@@ -34,5 +34,10 @@ public enum PerformanceState
     /// <summary>
     /// Act 5: Brief transition before next performance cycle
     /// </summary>
-    Transitioning = 5
+    Transitioning = 5,
+
+    /// <summary>
+    /// Final state: Comedy show complete (10 jokes delivered)
+    /// </summary>
+    Complete = 6
 }

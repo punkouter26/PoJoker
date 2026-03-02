@@ -5,11 +5,11 @@ test.describe('Joke Performance Flow', () => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
 
-    // The stage header should show "Performance"
-    await expect(page.getByRole('heading', { name: /performance/i })).toBeVisible();
+    // The stage header shows the jester brand
+    await expect(page.getByRole('heading', { name: /The Digital Jester/i })).toBeVisible();
 
-    // Click the Start button to begin the joke loop
-    const startBtn = page.getByRole('button', { name: /start/i });
+    // Click the Begin button to start the joke loop
+    const startBtn = page.getByRole('button', { name: /begin/i });
     await expect(startBtn).toBeVisible({ timeout: 10000 });
     await startBtn.click();
 
@@ -27,18 +27,14 @@ test.describe('Joke Performance Flow', () => {
     const stopBtn = page.getByRole('button', { name: /stop/i });
     await stopBtn.click();
 
-    // Start button should reappear after stopping
-    await expect(page.getByRole('button', { name: /start/i })).toBeVisible({ timeout: 10000 });
+    // Begin button should reappear after stopping
+    await expect(page.getByRole('button', { name: /begin/i })).toBeVisible({ timeout: 10000 });
   });
 
   test('navigates from home to leaderboard', async ({ page }) => {
-    await page.goto('/');
+    // Navigate directly to leaderboard (no persistent nav bar in the current UI)
+    await page.goto('/leaderboard');
     await page.waitForLoadState('networkidle');
-
-    // Find and click the leaderboard nav link
-    const leaderboardLink = page.getByRole('link', { name: /leaderboard/i });
-    await expect(leaderboardLink).toBeVisible({ timeout: 10000 });
-    await leaderboardLink.click();
 
     // Should be on the leaderboard page
     await expect(page).toHaveURL(/leaderboard/i);

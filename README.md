@@ -1,10 +1,12 @@
 # Po.Joker - The Digital Jester 🃏
 
-A passive AI comedy application where an AI Jester fetches jokes, attempts to predict punchlines, and provides entertaining analysis—all without user input.
+An autonomous AI comedy application that fetches multi-part jokes, predicts punchlines using Azure OpenAI, rates them across multiple dimensions, and delivers an immersive medieval-themed comedy show—**all without user input**.
 
+**Status:** Active Development  
 ![.NET 10](https://img.shields.io/badge/.NET-10.0%20Preview-purple)
 ![Blazor](https://img.shields.io/badge/Blazor-Web%20App-blue)
 ![Azure](https://img.shields.io/badge/Azure-Deployed-0078D4)
+![Tests](https://img.shields.io/badge/Tests-Unit%20%26%20Integration-green)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
 ## 🎭 Features
@@ -212,7 +214,66 @@ See [docs/kql/](docs/kql/) for monitoring queries:
 }
 ```
 
-## 📝 API Endpoints
+## � Documentation & Architecture
+
+Comprehensive documentation with visual diagrams is available in the `/docs` folder:
+
+### High-Signal Documentation
+- **[ProductSpec.md](docs/ProductSpec.md)** – Business logic, features, success metrics, and scope
+- **[DevOps.md](docs/DevOps.md)** – CI/CD pipeline, environment secrets, deployment strategies
+- **[LocalSetup.md](docs/LocalSetup.md)** – Day 1 onboarding guide, Docker Compose, troubleshooting
+
+### Architecture Diagrams (View in Mermaid)
+
+**Full Detail Diagrams:**
+- **[Architecture.mmd](docs/Architecture.mmd)** – C4 System Context: Azure services, Managed Identity, all connections
+- **[ApplicationFlow.mmd](docs/ApplicationFlow.mmd)** – User journey: Auth → Comedy loop → Leaderboard navigation
+- **[DataModel.mmd](docs/DataModel.mmd)** – Entity Relationship Diagram: Joke, Performance Score, Leaderboard entities
+- **[ComponentMap.mmd](docs/ComponentMap.mmd)** – Component tree: Frontend hierarchy + Backend service dependencies
+- **[DataPipeline.mmd](docs/DataPipeline.mmd)** – CRUD workflow: Fetch → Predict → Rate → Store → Display
+
+**Simplified Diagrams (High-level Overview):**
+- [Architecture_SIMPLE.mmd](docs/Architecture_SIMPLE.mmd)
+- [ApplicationFlow_SIMPLE.mmd](docs/ApplicationFlow_SIMPLE.mmd)
+- [DataModel_SIMPLE.mmd](docs/DataModel_SIMPLE.mmd)
+- [ComponentMap_SIMPLE.mmd](docs/ComponentMap_SIMPLE.mmd)
+- [DataPipeline_SIMPLE.mmd](docs/DataPipeline_SIMPLE.mmd)
+
+**View Diagrams:**
+1. Copy `.mmd` file content
+2. Paste into [Mermaid Live Editor](https://mermaid.live)
+3. Or use VS Code [Markdown Preview Mermaid Support](https://marketplace.visualstudio.com/items?itemName=bierner.markdown-mermaid)
+
+### Visual Assets
+- **Screenshots** – UI mockups of all pages in `/docs/screenshots/`
+- **Improvement Suggestions** – [ImprovementSuggestions.md](docs/ImprovementSuggestions.md)
+
+## 🏗️ System Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ User Browser (WebSocket/HTTP)                               │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                    ┌─────────▼──────────┐
+                    │ Blazor Web App     │
+                    │ (.NET 10)          │
+                    │ • JesterStage      │
+                    │ • Leaderboard      │
+                    │ • Diagnostics      │
+                    └─────────┬──────────┘
+        ┌───────────────────┼───────────────────┐
+        │                   │                   │
+   ┌────▼────┐      ┌──────▼───────┐    ┌─────▼────┐
+   │ JokeAPI │      │ Azure OpenAI │    │  Storage │
+   │ Public  │      │ (GPT-4)      │    │ (Tables) │
+   │ REST    │      │ + Key Vault  │    │ + Azurite│
+   └─────────┘      └──────────────┘    └──────────┘
+```
+
+**See [Architecture.mmd](docs/Architecture.mmd) for detailed C4 diagram**
+
+## �📝 API Endpoints
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|

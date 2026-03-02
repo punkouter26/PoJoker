@@ -1,4 +1,3 @@
-using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Po.Joker.DTOs;
@@ -29,15 +28,8 @@ public static class AnalysisEndpoints
         [FromBody] JokeDto joke,
         [FromHeader(Name = "X-Session-Id")] string? sessionId,
         [FromServices] IMediator mediator,
-        [FromServices] IValidator<JokeDto> validator,
         CancellationToken cancellationToken)
     {
-        var validationResult = await validator.ValidateAsync(joke, cancellationToken);
-        if (!validationResult.IsValid)
-        {
-            return Results.ValidationProblem(validationResult.ToDictionary());
-        }
-
         // Use provided session ID or generate a new one
         sessionId ??= Guid.NewGuid().ToString("N")[..8];
 

@@ -1,16 +1,18 @@
 .joke-card {
-    background: var(--card-bg);
-    border: 2px solid var(--gold-accent);
+    background: rgba(31, 31, 56, 0.4);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(184, 149, 106, 0.2);
     border-radius: 12px;
     padding: 1.5rem;
     margin: 1rem 0;
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
 }
 
 .joke-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+    transform: translateY(-3px) scale(1.01);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(12px);
 }
 
 .joke-category {

@@ -10,9 +10,9 @@
     </header>
 
     <div class="leaderboard-controls">
-        <div class="sort-controls">
-            <label>Sort by:</label>
-            <select @bind="SortBy" @bind:after="LoadLeaderboard">
+        <div class="control-group">
+            <label for="sortBy">Sort by:</label>
+            <select id="sortBy" @bind="SortBy" @bind:after="LoadLeaderboard" aria-label="Sort leaderboard by">
                 <option value="Triumph">Most Triumphs</option>
                 <option value="Cleverness">Most Clever</option>
                 <option value="Rudeness">Most Rude</option>
@@ -21,15 +21,19 @@
             </select>
         </div>
         
-        <div class="limit-controls">
-            <label>Show:</label>
-            <select @bind="TopCount" @bind:after="LoadLeaderboard">
+        <div class="control-group">
+            <label for="topCount">Show:</label>
+            <select id="topCount" @bind="TopCount" @bind:after="LoadLeaderboard" aria-label="Number of entries to show">
                 <option value="10">Top 10</option>
                 <option value="25">Top 25</option>
                 <option value="50">Top 50</option>
                 <option value="100">Top 100</option>
             </select>
         </div>
+
+        <button class="btn btn-secondary refresh-btn" @onclick="LoadLeaderboard" title="Refresh leaderboard" aria-label="Refresh leaderboard">
+            🔄 Refresh
+        </button>
     </div>
 
     <div class="leaderboard-container">
@@ -53,9 +57,9 @@
             <div class="leaderboard-table">
                 <div class="table-header">
                     <span class="header-rank">Rank</span>
-                    <span class="header-session">Session</span>
+                    <span class="header-session">Session ID</span>
                     <span class="header-stats">Triumphs</span>
-                    <span class="header-rate">Rate</span>
+                    <span class="header-rate">Success %</span>
                     <span class="header-score">Score</span>
                 </div>
                 
@@ -64,6 +68,13 @@
                     <LeaderboardEntry Entry="@entry" />
                 }
             </div>
+
+            @if (Entries.Count >= TopCount)
+            {
+                <div class="leaderboard-footer">
+                    <p class="footer-text">Showing top {{ TopCount }} of many champions</p>
+                </div>
+            }
         }
     </div>
 </div>

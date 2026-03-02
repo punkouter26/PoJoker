@@ -50,8 +50,7 @@ public class FetchJokeEndpointTests : IClassFixture<PoJokerWebApplicationFactory
     [Fact]
     public async Task GetFetch_WithExcludeIds_ReturnsOk()
     {
-        // Act - verify endpoint handles excludeIds parameter gracefully
-        // Note: ASP.NET Core expects array parameters in format: excludeIds=1&excludeIds=2&excludeIds=3
+        // Act - exclude IDs that don't exist in mock data (mock uses IDs 10,20,30,40)
         var response = await _client.GetAsync("/api/jokes/fetch?safeMode=true&excludeIds=1&excludeIds=2&excludeIds=3");
 
         // Assert - should return OK (exclusion is best-effort at application level)

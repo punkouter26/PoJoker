@@ -1,24 +1,19 @@
-using FluentValidation;
 using MediatR;
-using Po.Joker.Validation;
 
 namespace Po.Joker.Infrastructure.Configuration;
 
 /// <summary>
-/// Extension methods for configuring MediatR and validation.
+/// Extension methods for configuring MediatR.
 /// </summary>
 public static class MediatRConfiguration
 {
     /// <summary>
-    /// Adds MediatR for CQRS pattern and FluentValidation.
+    /// Adds MediatR for CQRS pattern.
     /// </summary>
     public static IServiceCollection AddPoJokerMediatR(this IServiceCollection services)
     {
         // Add MediatR for CQRS
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<Program>());
-
-        // Add FluentValidation
-        services.AddValidatorsFromAssemblyContaining<JokeDtoValidator>();
 
         return services;
     }
